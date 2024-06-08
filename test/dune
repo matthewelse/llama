@@ -1,0 +1,6 @@
+(library
+ (name test_llama)
+ (libraries core expect_test_helpers_core llama)
+ (inline_tests)
+ (preprocess
+  (pps ppx_jane)))
