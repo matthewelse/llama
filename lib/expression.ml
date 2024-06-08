@@ -6,13 +6,13 @@ module Const = struct
     | String of string
   [@@deriving sexp_of, variants]
 
-  let type_name t =
+  let intrinsic_type t : Intrinsic.Type.t =
     match t with
-    | Int _ -> Type.Name.Built_in.int
-    | String _ -> Type.Name.Built_in.string
+    | Int _ -> Int
+    | String _ -> String
   ;;
 
-  let type_of t : Type.t = Apply (type_name t, [])
+  let type_of t : Type.t = Type.intrinsic (intrinsic_type t)
 end
 
 type t =
@@ -26,6 +26,7 @@ type t =
       }
   | Const of Const.t
   | Tuple of t list
+  | Construct of Constructor.t * t option
 [@@deriving sexp_of, variants]
 
 let const_int n = Const (Int n)

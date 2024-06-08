@@ -44,6 +44,7 @@ let rec pp_type' formatter (ty : Type.t) ~tvs =
       formatter
       ts;
     Format.pp_print_char formatter ')'
+  | Intrinsic i -> Format.pp_print_string formatter (Intrinsic.Type.to_string i)
 ;;
 
 let map_type_vars vars =
@@ -77,6 +78,133 @@ let pp_polytype formatter (ty : Type.Poly.t) =
 let pp_type formatter ty =
   let tvs = map_type_vars (Type.free_type_vars ty) in
   pp_type' formatter ty ~tvs
+;;
+
+let pp_ident formatter ident = Format.pp_print_string formatter (Ident.to_string ident)
+
+let pp_const formatter (const : Expression.Const.t) =
+  match const with
+  | Int i -> Format.pp_print_int formatter i
+  | String s -> Format.pp_print_string formatter s
+;;
+
+let rec pp_expr formatter (expr : Expression.t) =
+  match expr with
+  | Var ident -> pp_ident formatter ident
+  | Apply (f, arg) ->
+    pp_expr formatter f;
+    Format.pp_print_char formatter '(';
+    pp_expr formatter arg;
+    Format.pp_print_char formatter ')'
+  | Lambda (ident, body) ->
+    Format.pp_print_string formatter "fun ";
+    pp_ident formatter ident;
+    Format.pp_print_string formatter " -> ";
+    pp_expr formatter body
+  | Let { name; value; in_ } ->
+    Format.pp_print_string formatter "let ";
+    pp_ident formatter name;
+    Format.pp_print_string formatter " = ";
+    pp_expr formatter value;
+    Format.pp_print_string formatter " in ";
+    pp_expr formatter in_
+  | Const c -> pp_const formatter c
+  | Tuple es ->
+    Format.pp_print_char formatter '(';
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+      pp_expr
+      formatter
+      es;
+    Format.pp_print_char formatter ')'
+  | Construct (constructor, arg) ->
+    Format.pp_print_string formatter (Constructor.to_string constructor);
+    (match arg with
+     | None -> ()
+     | Some arg ->
+       Format.pp_print_string formatter " (";
+       pp_expr formatter arg;
+       Format.pp_print_string formatter ")")
+;;
+
+let pp_intrinsic formatter intrinsic =
+  Format.pp_print_string formatter (Intrinsic.Value.to_string intrinsic)
+;;
+
+let pp_type_name formatter name =
+  Format.pp_print_string formatter (Type.Name.to_string name)
+;;
+
+let pp_record_field formatter (ident, ty) =
+  Format.pp_print_string formatter (Field_name.to_string ident);
+  Format.pp_print_string formatter " : ";
+  pp_type formatter ty
+;;
+
+let pp_type_shape formatter (shape : Ast.Type_shape.t) =
+  match shape with
+  | Alias ty -> pp_type formatter ty
+  | Record { fields } ->
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter "; ")
+      pp_record_field
+      formatter
+      fields
+  | Variant { constructors } ->
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " ")
+      (fun formatter (name, ty) ->
+        Format.pp_print_string formatter "| ";
+        Format.pp_print_string formatter (Constructor.to_string name);
+        match ty with
+        | None -> ()
+        | Some ty ->
+          Format.pp_print_string formatter " of ";
+          pp_type formatter ty)
+      formatter
+      constructors
+;;
+
+let pp_structure_item formatter (item : Ast.Structure_item.t) =
+  match item with
+  | Let { name; value } ->
+    Format.pp_print_string formatter "let ";
+    pp_ident formatter name;
+    Format.pp_print_string formatter " = ";
+    pp_expr formatter value
+  | Intrinsic { name; intrinsic; type_ } ->
+    Format.pp_print_string formatter "intrinsic ";
+    pp_ident formatter name;
+    Format.pp_print_string formatter " : ";
+    pp_polytype formatter type_;
+    Format.pp_print_string formatter " = ";
+    pp_intrinsic formatter intrinsic
+  | Type_declaration { name; type_declaration = { type_params; type_shape; type_vars } }
+    ->
+    Format.pp_print_string formatter "type ";
+    if not (List.is_empty type_params)
+    then (
+      if List.length type_params > 1 then Format.pp_print_char formatter '(';
+      Format.pp_print_list
+        ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+        (fun formatter tv ->
+          let type_var = Map.find_exn type_vars tv in
+          Format.pp_print_string formatter type_var)
+        formatter
+        type_params;
+      if List.length type_params > 1 then Format.pp_print_char formatter ')';
+      Format.pp_print_string formatter " ");
+    pp_type_name formatter name;
+    Format.pp_print_string formatter " = ";
+    pp_type_shape formatter type_shape
+;;
+
+let pp_ast formatter (ast : Ast.t) =
+  Format.pp_print_list
+    ~pp_sep:(fun formatter () -> Format.pp_print_string formatter "\n")
+    pp_structure_item
+    formatter
+    ast
 ;;
 
 module For_testing = struct

@@ -8,6 +8,15 @@ let%expect_test "example" =
   let y = Type.Var.create () in
   let z = Type.Var.create () in
   let apply s l : Type.t = Apply (Type.Name.of_string s, l) in
+  let def_type s args : Type.Name.t * Type.Constructor.t =
+    Type.Name.of_string s, { args; shape = Alias (Type.intrinsic Int) }
+  in
+  let tyenv =
+    List.fold
+      [ def_type "a" []; def_type "j" [ x; y; z ]; def_type "f" [ x; y ] ]
+      ~init:Type.Name.Map.empty
+      ~f:(fun env (name, def) -> Map.set env ~key:name ~data:def)
+  in
   let a = apply "a" [] in
   let j x y z = apply "j" [ x; y; z ] in
   let f x y = apply "f" [ x; y ] in
@@ -17,7 +26,7 @@ let%expect_test "example" =
   let t2 = j (f (Var y) (Var y)) (f (Var z) (Var z)) (f a a) in
   pp t2;
   [%expect {| (('a, 'a) f, ('b, 'b) f, (a, a) f) j |}];
-  let u = Type.unify t1 t2 in
+  let u = Type.unify t1 t2 ~tyenv in
   print_s [%sexp (u : Type.t Type.Var.Map.t)];
   [%expect
     {|

@@ -1,17 +1,15 @@
 open! Core
-
-module Name : sig
-  include String_id.S
-
-  module Built_in : sig
-    val bool : t
-    val int : t
-    val string : t
-    val unit : t
-  end
-end
+module Name : String_id.S
 
 module Var : sig
+  type t [@@immediate]
+
+  include Unique_id.Id with type t := t
+end
+
+module Id : sig
+  (** Used to uniquely identify nominally typed records and variants. *)
+
   type t [@@immediate]
 
   include Unique_id.Id with type t := t
@@ -22,13 +20,8 @@ type t =
   | Apply of Name.t * t list
   | Fun of t * t
   | Tuple of t list
+  | Intrinsic of Intrinsic.Type.t
 [@@deriving sexp_of]
-
-(** [unify t t'] raises if [t] is a type variable that occurs in [t']. *)
-val unify : t -> t -> t Var.Map.t
-
-val unify' : t -> t -> acc:t Var.Map.t -> t Var.Map.t
-val free_type_vars : t -> Var.Set.t
 
 module Poly : sig
   type ty := t
@@ -48,5 +41,39 @@ module Poly : sig
   val free_type_vars : t -> Var.Set.t
 end
 
+module Constructor : sig
+  type ty := t
+
+  module Shape : sig
+    type t =
+      | Alias of ty
+      | Record of
+          { fields : (Field_name.t * ty) list
+          ; id : Id.t
+          }
+      | Variant of
+          { constructors : (Constructor.t * ty option) list
+          ; id : Id.t
+          }
+    [@@deriving sexp_of]
+  end
+
+  type t =
+    { shape : Shape.t
+    ; args : Var.t list
+    }
+  [@@deriving sexp_of]
+end
+
+(** [unify t t'] raises if [t] is a type variable that occurs in [t']. *)
+val unify : t -> t -> tyenv:Constructor.t Name.Map.t -> t Var.Map.t
+
+val unify' : t -> t -> tyenv:Constructor.t Name.Map.t -> acc:t Var.Map.t -> t Var.Map.t
+val free_type_vars : t -> Var.Set.t
+
+(** [const name] is a type with no type parameters. *)
+val const : Name.t -> t
+
+val intrinsic : Intrinsic.Type.t -> t
 val generalize : t -> env:Poly.t Ident.Map.t -> Poly.t
 val subst : t -> replacements:t Var.Map.t -> t

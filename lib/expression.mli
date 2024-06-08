@@ -20,6 +20,7 @@ type t =
       }
   | Const of Const.t
   | Tuple of t list
+  | Construct of Constructor.t * t option
 [@@deriving sexp_of, variants]
 
 val const_int : int -> t
