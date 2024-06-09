@@ -12,5 +12,16 @@ module Type = struct
     | String
   [@@deriving enumerate, equal, variants, sexp_of]
 
-  let to_string t = "%" ^ Variants.to_name t |> String.lowercase
+  let to_string t =
+    match t with
+    | Int -> "%int"
+    | String -> "%string"
+  ;;
+
+  let of_string s =
+    match s with
+    | "%int" -> Int
+    | "%string" -> String
+    | _ -> failwith [%string "Invalid type intrinsic %{s}"]
+  ;;
 end

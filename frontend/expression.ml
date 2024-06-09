@@ -1,8 +1,9 @@
 open! Core
+open! Import
 
 module Const = struct
   type t =
-    | Int of int
+    | Int of string
     | String of string
   [@@deriving sexp_of, variants]
 
@@ -11,8 +12,6 @@ module Const = struct
     | Int _ -> Int
     | String _ -> String
   ;;
-
-  let type_of t : Type.t = Type.intrinsic (intrinsic_type t)
 end
 
 type t =
@@ -26,8 +25,8 @@ type t =
       }
   | Const of Const.t
   | Tuple of t list
-  | Construct of Constructor.t * t option
+  | Construct of Constructor.t * t option (* | Sequence of t list*)
 [@@deriving sexp_of, variants]
 
-let const_int n = Const (Int n)
+let const_int n = Const (Int (Int.to_string n))
 let const_string s = Const (String s)

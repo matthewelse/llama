@@ -7,14 +7,14 @@ let%expect_test "example" =
   let x = Type.Var.create () in
   let y = Type.Var.create () in
   let z = Type.Var.create () in
-  let apply s l : Type.t = Apply (Type.Name.of_string s, l) in
-  let def_type s args : Type.Name.t * Type.Constructor.t =
-    Type.Name.of_string s, { args; shape = Alias (Type.intrinsic Int) }
+  let apply s l : Type.t = Apply (Type_name.of_string s, l) in
+  let def_type s args : Type_name.t * Type.Constructor.t =
+    Type_name.of_string s, { args; shape = Alias (Type.intrinsic Int) }
   in
   let tyenv =
     List.fold
       [ def_type "a" []; def_type "j" [ x; y; z ]; def_type "f" [ x; y ] ]
-      ~init:Type.Name.Map.empty
+      ~init:Type_name.Map.empty
       ~f:(fun env (name, def) -> Map.set env ~key:name ~data:def)
   in
   let a = apply "a" [] in

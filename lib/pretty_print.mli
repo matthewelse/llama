@@ -1,4 +1,5 @@
 open! Core
+open! Import
 
 val pp_type : Formatter.t -> Type.t -> unit
 val pp_polytype : Formatter.t -> Type.Poly.t -> unit

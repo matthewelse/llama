@@ -1,4 +1,5 @@
 open! Core
+open! Import
 
 let subst_env (env : Type.Poly.t Ident.Map.t) ~replacements =
   Map.map env ~f:(Type.Poly.subst ~replacements)
@@ -7,9 +8,9 @@ let subst_env (env : Type.Poly.t Ident.Map.t) ~replacements =
 let rec type_of
   (expr : Expression.t)
   (env : Type.Poly.t Ident.Map.t)
-  (tyenv : Type.Constructor.t Type.Name.Map.t)
-  (constructors : Type.Name.t Constructor.Map.t)
-  (fields : Type.Name.t Field_name.Map.t)
+  (tyenv : Type.Constructor.t Type_name.Map.t)
+  (constructors : Type_name.t Constructor.Map.t)
+  (fields : Type_name.t Field_name.Map.t)
   : (Type.t Type.Var.Map.t * Type.t) Or_error.t
   =
   let open Or_error.Let_syntax in
@@ -55,7 +56,7 @@ let rec type_of
     let generalized_type = Type.generalize t1 ~env in
     let env = Map.set (subst_env env ~replacements:s1) ~key:name ~data:generalized_type in
     type_of in_ env tyenv constructors fields
-  | Const c -> Ok (Type.Var.Map.empty, Expression.Const.type_of c)
+  | Const c -> Ok (Type.Var.Map.empty, Intrinsic (Expression.Const.intrinsic_type c))
   | Tuple ts ->
     let%bind replacements, types =
       List.fold_result
@@ -149,7 +150,7 @@ let type_of_let_binding t ~env ~tyenv ~constructors ~fields =
 
 let type_ast (ast : Ast.t) =
   let env = Ident.Map.empty in
-  let tyenv = Type.Name.Map.empty in
+  let tyenv = Type_name.Map.empty in
   let constructors = Constructor.Map.empty in
   let fields = Field_name.Map.empty in
   List.fold_result
@@ -166,14 +167,26 @@ let type_ast (ast : Ast.t) =
       | Intrinsic { name; type_; intrinsic = _ } ->
         (* Surprisingly, the actual intrinsic used isn't that important for type checking. We trust
            the type provided by the standard library. *)
+        let type_ = Type.Poly.of_ast type_ ~var_mapping:String.Map.empty in
         let env = Map.set env ~key:name ~data:type_ in
         Ok (env, tyenv, constructors, fields)
-      | Type_declaration { name = type_name; type_declaration } ->
-        let%tydi { type_params; type_shape; type_vars = _ } = type_declaration in
+      | Type_declaration { name = type_name; type_params; type_shape } ->
+        let type_params =
+          List.map type_params ~f:(fun name -> name, Type.Var.create ())
+        in
+        let type_var_mapping =
+          String.Map.of_alist_reduce type_params ~f:(fun _ most_recent -> most_recent)
+        in
         let shape, constructors, fields =
           match type_shape with
-          | Alias ty -> Type.Constructor.Shape.Alias ty, constructors, fields
+          | Alias ty ->
+            let ty = Type.of_ast ty ~var_mapping:type_var_mapping in
+            Type.Constructor.Shape.Alias ty, constructors, fields
           | Record { fields = record_fields } ->
+            let record_fields =
+              List.map record_fields ~f:(fun (name, ty) ->
+                name, Type.of_ast ty ~var_mapping:type_var_mapping)
+            in
             let shape : Type.Constructor.Shape.t =
               Record { fields = record_fields; id = Type.Id.create () }
             in
@@ -182,6 +195,10 @@ let type_ast (ast : Ast.t) =
             , List.fold record_fields ~init:fields ~f:(fun fields (name, _) ->
                 Map.add_exn fields ~key:name ~data:type_name) )
           | Variant { constructors = variant_constructors } ->
+            let variant_constructors =
+              List.map variant_constructors ~f:(fun (name, ty) ->
+                name, Option.map ty ~f:(Type.of_ast ~var_mapping:type_var_mapping))
+            in
             let shape : Type.Constructor.Shape.t =
               Variant { constructors = variant_constructors; id = Type.Id.create () }
             in
@@ -193,7 +210,9 @@ let type_ast (ast : Ast.t) =
                   Map.add_exn constructors ~key:name ~data:type_name)
             , fields )
         in
-        let constructor : Type.Constructor.t = { args = type_params; shape } in
+        let constructor : Type.Constructor.t =
+          { args = List.map ~f:snd type_params; shape }
+        in
         let tyenv = Map.set tyenv ~key:type_name ~data:constructor in
         Ok (env, tyenv, constructors, fields))
 ;;

@@ -1,0 +1,14 @@
+(library
+ (name llama_frontend)
+ (libraries core llama_common)
+ (preprocess
+  (pps ppx_jane)))
+
+(ocamllex
+ (modules lexer0))
+
+(menhir
+ (modules parser0)
+ (flags
+  (--external-tokens Token --exn-carries-state --dump))
+ (explain true))

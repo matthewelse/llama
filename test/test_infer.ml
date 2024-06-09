@@ -8,7 +8,7 @@ let%expect_test "examples" =
       Infer.type_of_let_binding
         expr
         ~env:Ident.Map.empty
-        ~tyenv:Type.Name.Map.empty
+        ~tyenv:Type_name.Map.empty
         ~constructors:Constructor.Map.empty
         ~fields:Field_name.Map.empty
       |> ok_exn
@@ -17,7 +17,7 @@ let%expect_test "examples" =
   in
   let zero = const_int 0 in
   type_of zero;
-  [%expect {| %int |}];
+  [%expect {| "%int" |}];
   let ident = Ident.of_string in
   let x = ident "x" in
   let y = ident "y" in
@@ -43,5 +43,5 @@ let%expect_test "examples" =
            ~in_:(Apply (Var (ident "id"), [ Const (String "hello, world") ])))
   in
   type_of we_love_polymorphism;
-  [%expect {| %string |}]
+  [%expect {| "%string" |}]
 ;;

@@ -1,4 +1,5 @@
 open! Core
+open! Import
 
 let pp_tv' formatter i =
   let chars = String.to_array "abcdefghijklmnopqrstuvwxyz" in
@@ -22,7 +23,7 @@ let pp_tv formatter tv ~tvs =
 let rec pp_type' formatter (ty : Type.t) ~tvs =
   match ty with
   | Var tv -> pp_tv formatter tv ~tvs
-  | Apply (n, []) -> Format.pp_print_string formatter (Type.Name.to_string n)
+  | Apply (n, []) -> Format.pp_print_string formatter (Type_name.to_string n)
   | Apply (n, vars) ->
     Format.pp_print_char formatter '(';
     Format.pp_print_list
@@ -31,7 +32,7 @@ let rec pp_type' formatter (ty : Type.t) ~tvs =
       formatter
       vars;
     Format.pp_print_string formatter ") ";
-    Format.pp_print_string formatter (Type.Name.to_string n)
+    Format.pp_print_string formatter (Type_name.to_string n)
   | Fun (args, r) ->
     Format.pp_print_list
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " -> ")
@@ -48,7 +49,10 @@ let rec pp_type' formatter (ty : Type.t) ~tvs =
       formatter
       ts;
     Format.pp_print_char formatter ')'
-  | Intrinsic i -> Format.pp_print_string formatter (Intrinsic.Type.to_string i)
+  | Intrinsic i ->
+    Format.pp_print_char formatter '"';
+    Format.pp_print_string formatter (Intrinsic.Type.to_string i);
+    Format.pp_print_char formatter '"'
 ;;
 
 let map_type_vars vars =
@@ -84,11 +88,60 @@ let pp_type formatter ty =
   pp_type' formatter ty ~tvs
 ;;
 
+let rec pp_ast_type formatter (ty : Ast.Type.t) =
+  match ty with
+  | Var tv -> Format.pp_print_string formatter tv
+  | Apply (n, []) -> Format.pp_print_string formatter (Type_name.to_string n)
+  | Apply (n, vars) ->
+    Format.pp_print_char formatter '(';
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+      pp_ast_type
+      formatter
+      vars;
+    Format.pp_print_string formatter ") ";
+    Format.pp_print_string formatter (Type_name.to_string n)
+  | Fun (args, r) ->
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " -> ")
+      pp_ast_type
+      formatter
+      args;
+    Format.pp_print_string formatter " -> ";
+    pp_ast_type formatter r
+  | Tuple ts ->
+    Format.pp_print_char formatter '(';
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " * ")
+      pp_ast_type
+      formatter
+      ts;
+    Format.pp_print_char formatter ')'
+  | Intrinsic i ->
+    Format.pp_print_char formatter '"';
+    Format.pp_print_string formatter (Intrinsic.Type.to_string i);
+    Format.pp_print_char formatter '"'
+;;
+
+let pp_ast_polytype formatter (ty : Ast.Type.Poly.t) =
+  let%tydi { quantifiers; ty } = ty in
+  (* Don't show quantifiers if there aren't any. *)
+  if not (List.is_empty quantifiers)
+  then (
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " ")
+      Format.pp_print_string
+      formatter
+      quantifiers;
+    Format.pp_print_string formatter ". ");
+  pp_ast_type formatter ty
+;;
+
 let pp_ident formatter ident = Format.pp_print_string formatter (Ident.to_string ident)
 
 let pp_const formatter (const : Expression.Const.t) =
   match const with
-  | Int i -> Format.pp_print_int formatter i
+  | Int i -> Format.pp_print_string formatter i
   | String s -> Format.pp_print_string formatter s
 ;;
 
@@ -145,25 +198,31 @@ let pp_intrinsic formatter intrinsic =
   Format.pp_print_string formatter (Intrinsic.Value.to_string intrinsic)
 ;;
 
+(* let pp_intrinsic_type formatter intrinsic =
+   Format.pp_print_string formatter (Intrinsic.Type.to_string intrinsic)
+   ;;*)
+
 let pp_type_name formatter name =
-  Format.pp_print_string formatter (Type.Name.to_string name)
+  Format.pp_print_string formatter (Type_name.to_string name)
 ;;
 
 let pp_record_field formatter (ident, ty) =
   Format.pp_print_string formatter (Field_name.to_string ident);
   Format.pp_print_string formatter " : ";
-  pp_type formatter ty
+  pp_ast_type formatter ty
 ;;
 
 let pp_type_shape formatter (shape : Ast.Type_shape.t) =
   match shape with
-  | Alias ty -> pp_type formatter ty
+  | Alias ty -> pp_ast_type formatter ty
   | Record { fields } ->
+    Format.pp_print_char formatter '{';
     Format.pp_print_list
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter "; ")
       pp_record_field
       formatter
-      fields
+      fields;
+    Format.pp_print_char formatter '}'
   | Variant { constructors } ->
     Format.pp_print_list
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " ")
@@ -174,7 +233,7 @@ let pp_type_shape formatter (shape : Ast.Type_shape.t) =
         | None -> ()
         | Some ty ->
           Format.pp_print_string formatter " of ";
-          pp_type formatter ty)
+          pp_ast_type formatter ty)
       formatter
       constructors
 ;;
@@ -190,20 +249,17 @@ let pp_structure_item formatter (item : Ast.Structure_item.t) =
     Format.pp_print_string formatter "intrinsic ";
     pp_ident formatter name;
     Format.pp_print_string formatter " : ";
-    pp_polytype formatter type_;
+    pp_ast_polytype formatter type_;
     Format.pp_print_string formatter " = ";
     pp_intrinsic formatter intrinsic
-  | Type_declaration { name; type_declaration = { type_params; type_shape; type_vars } }
-    ->
+  | Type_declaration { name; type_params; type_shape } ->
     Format.pp_print_string formatter "type ";
     if not (List.is_empty type_params)
     then (
       if List.length type_params > 1 then Format.pp_print_char formatter '(';
       Format.pp_print_list
         ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
-        (fun formatter tv ->
-          let type_var = Map.find_exn type_vars tv in
-          Format.pp_print_string formatter type_var)
+        (fun formatter tv -> Format.pp_print_string formatter tv)
         formatter
         type_params;
       if List.length type_params > 1 then Format.pp_print_char formatter ')';

@@ -1,12 +1,13 @@
 open! Core
+open! Import
 
 module Const : sig
   type t =
-    | Int of int
+    | Int of string
     | String of string
   [@@deriving sexp_of]
 
-  val type_of : t -> Type.t
+  val intrinsic_type : t -> Intrinsic.Type.t
 end
 
 type t =
@@ -20,7 +21,7 @@ type t =
       }
   | Const of Const.t
   | Tuple of t list
-  | Construct of Constructor.t * t option
+  | Construct of Constructor.t * t option (* | Sequence of t list*)
 [@@deriving sexp_of, variants]
 
 val const_int : int -> t

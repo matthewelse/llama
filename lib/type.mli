@@ -1,5 +1,5 @@
 open! Core
-module Name : String_id.S
+open! Import
 
 module Var : sig
   type t [@@immediate]
@@ -17,11 +17,13 @@ end
 
 type t =
   | Var of Var.t
-  | Apply of Name.t * t list
+  | Apply of Type_name.t * t list
   | Fun of t list * t
   | Tuple of t list
   | Intrinsic of Intrinsic.Type.t
 [@@deriving sexp_of]
+
+val of_ast : Ast.Type.t -> var_mapping:Var.t String.Map.t -> t
 
 module Poly : sig
   type ty := t
@@ -39,6 +41,7 @@ module Poly : sig
 
   val subst : t -> replacements:ty Var.Map.t -> t
   val free_type_vars : t -> Var.Set.t
+  val of_ast : Ast.Type.Poly.t -> var_mapping:Var.t String.Map.t -> t
 end
 
 module Constructor : sig
@@ -66,13 +69,19 @@ module Constructor : sig
 end
 
 (** [unify t t'] raises if [t] is a type variable that occurs in [t']. *)
-val unify : t -> t -> tyenv:Constructor.t Name.Map.t -> t Var.Map.t
+val unify : t -> t -> tyenv:Constructor.t Type_name.Map.t -> t Var.Map.t
 
-val unify' : t -> t -> tyenv:Constructor.t Name.Map.t -> acc:t Var.Map.t -> t Var.Map.t
+val unify'
+  :  t
+  -> t
+  -> tyenv:Constructor.t Type_name.Map.t
+  -> acc:t Var.Map.t
+  -> t Var.Map.t
+
 val free_type_vars : t -> Var.Set.t
 
 (** [const name] is a type with no type parameters. *)
-val const : Name.t -> t
+val const : Type_name.t -> t
 
 val intrinsic : Intrinsic.Type.t -> t
 val generalize : t -> env:Poly.t Ident.Map.t -> Poly.t

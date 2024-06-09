@@ -1,20 +1,11 @@
 open! Core
-
-module Name = struct
-  include
-    String_id.Make
-      (struct
-        let module_name = "Type.Name"
-      end)
-      ()
-end
-
+open! Import
 module Var = Unique_id.Int ()
 module Id = Unique_id.Int ()
 
 type t =
   | Var of Var.t
-  | Apply of Name.t * t list
+  | Apply of Type_name.t * t list
   | Fun of t list * t
   | Tuple of t list
   | Intrinsic of Intrinsic.Type.t
@@ -59,6 +50,15 @@ let rec subst t ~replacements =
   | Intrinsic _ -> t
 ;;
 
+let rec of_ast (t : Ast.Type.t) ~var_mapping =
+  match t with
+  | Var v -> Var (Map.find_exn var_mapping v)
+  | Intrinsic i -> Intrinsic i
+  | Apply (name, ts) -> Apply (name, List.map ts ~f:(of_ast ~var_mapping))
+  | Fun (args, r) -> Fun (List.map args ~f:(of_ast ~var_mapping), of_ast r ~var_mapping)
+  | Tuple ts -> Tuple (List.map ts ~f:(of_ast ~var_mapping))
+;;
+
 module Poly = struct
   type ty = t [@@deriving sexp_of]
 
@@ -86,6 +86,19 @@ module Poly = struct
   let env_free_type_vars (env : t Ident.Map.t) =
     Map.fold env ~init:Var.Set.empty ~f:(fun ~key:_ ~data:pty acc ->
       Set.union acc (free_type_vars pty))
+  ;;
+
+  let ty_of_ast = of_ast
+
+  let of_ast (t : Ast.Type.Poly.t) ~var_mapping =
+    let%tydi { quantifiers; ty } = t in
+    let new_var_mappings = List.map quantifiers ~f:(fun v -> v, Var.create ()) in
+    let quantifiers = List.map new_var_mappings ~f:snd in
+    let var_mapping =
+      List.fold new_var_mappings ~init:var_mapping ~f:(fun acc (v, var) ->
+        Map.set acc ~key:v ~data:var)
+    in
+    { quantifiers = Var.Set.of_list quantifiers; ty = ty_of_ast ty ~var_mapping }
   ;;
 end
 
@@ -118,7 +131,7 @@ module Constructor = struct
   [@@deriving sexp_of]
 end
 
-let rec type_names_are_equivalent n1 n2 (tyenv : Constructor.t Name.Map.t) =
+let rec type_names_are_equivalent n1 n2 (tyenv : Constructor.t Type_name.Map.t) =
   match Map.find tyenv n1, Map.find tyenv n2 with
   | Some t1, Some t2 ->
     (match t1.shape, t2.shape with
@@ -126,9 +139,10 @@ let rec type_names_are_equivalent n1 n2 (tyenv : Constructor.t Name.Map.t) =
      | Record { id = id1; _ }, Record { id = id2; _ } -> Id.equal id1 id2
      | Variant { id = id1; _ }, Variant { id = id2; _ } -> Id.equal id1 id2
      | _ -> false)
-  | None, Some _ -> failwith [%string "Type not found in tyenv %{n1#Name}"]
-  | Some _, None -> failwith [%string "Type not found in tyenv %{n2#Name}"]
-  | None, None -> failwith [%string "Types not found in tyenv %{n1#Name} and %{n2#Name}"]
+  | None, Some _ -> failwith [%string "Type not found in tyenv %{n1#Type_name}"]
+  | Some _, None -> failwith [%string "Type not found in tyenv %{n2#Type_name}"]
+  | None, None ->
+    failwith [%string "Types not found in tyenv %{n1#Type_name} and %{n2#Type_name}"]
 
 and types_are_equivalent t1 t2 tyenv =
   match t1, t2 with
@@ -145,7 +159,7 @@ and types_are_equivalent t1 t2 tyenv =
   | Apply (n, _), other | other, Apply (n, _) ->
     (match Map.find tyenv n with
      | Some { args = _; shape = Alias t } -> types_are_equivalent t other tyenv
-     | None -> failwith [%string "Type not found in tyenv %{n#Name}"]
+     | None -> failwith [%string "Type not found in tyenv %{n#Type_name}"]
      | _ -> false)
   | _ -> false
 ;;
@@ -155,7 +169,7 @@ let rec unify' t1 t2 ~tyenv ~acc : t Var.Map.t =
   | Apply (n1, l1), Apply (n2, l2) ->
     if type_names_are_equivalent n1 n2 tyenv
     then List.fold2_exn l1 l2 ~init:acc ~f:(fun acc t1 t2 -> unify' t1 t2 ~tyenv ~acc)
-    else failwith [%string "Type Mismatch: %{n1#Name} != %{n2#Name}"]
+    else failwith [%string "Type Mismatch: %{n1#Type_name} != %{n2#Type_name}"]
   | Var v, t | t, Var v ->
     if occurs t ~var:v then failwith "occur check failed" else Map.set acc ~key:v ~data:t
   | Fun (l1, r1), Fun (l2, r2) ->
@@ -174,7 +188,7 @@ let rec unify' t1 t2 ~tyenv ~acc : t Var.Map.t =
   | Apply (n, _), other | other, Apply (n, _) ->
     (match Map.find tyenv n with
      | Some { args = _; shape = Alias t } -> unify' t other ~tyenv ~acc
-     | None -> failwith [%string "Type not found in tyenv %{n#Name}"]
+     | None -> failwith [%string "Type not found in tyenv %{n#Type_name}"]
      | _ -> raise_s [%message "Type Mismatch" (t1 : t) (t2 : t)])
   | _ -> raise_s [%message "Type Mismatch" (t1 : t) (t2 : t)]
 ;;

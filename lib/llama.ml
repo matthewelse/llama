@@ -1,8 +1,5 @@
-module Ast = Ast
-module Constructor = Constructor
-module Expression = Expression
-module Field_name = Field_name
-module Ident = Ident
+include Llama_common
+include Llama_frontend
 module Infer = Infer
 module Pretty_print = Pretty_print
 module Type = Type
