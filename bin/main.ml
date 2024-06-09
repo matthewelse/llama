@@ -1,1 +1,1 @@
-let () = print_endline "Hello, World!"
+let () = Command_unix.run Llama_driver.command

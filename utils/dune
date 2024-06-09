@@ -1,1 +1,5 @@
-(library (name llama_utils) (libraries llama_common llama_frontend llama_typing) (preprocess (pps ppx_jane)))
+(library
+ (name llama_utils)
+ (libraries llama_common llama_frontend llama_typing)
+ (preprocess
+  (pps ppx_jane)))

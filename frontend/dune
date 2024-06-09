@@ -5,10 +5,10 @@
   (pps ppx_jane)))
 
 (ocamllex
- (modules lexer0))
+ (modules lexer))
 
 (menhir
- (modules parser0)
+ (modules parser)
  (flags
   (--external-tokens Token --exn-carries-state --dump))
  (explain true))

@@ -1,0 +1,5 @@
+type t = "%int"
+
+intrinsic add : int -> int -> int = "%add_int"
+
+let ten = add (7, 3)

@@ -63,7 +63,6 @@ open Expression
 %nonassoc LessEqual, GreaterEqual, Less, Greater, NotEqual, Equal
 %left Plus, Minus
 %left Star, Slash
-%right Arrow
 
 %start<Ast.t> program
 

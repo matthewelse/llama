@@ -1,4 +1,4 @@
 (executable
  (public_name llama)
  (name main)
- (libraries llama))
+ (libraries core_unix.command_unix llama_driver))

@@ -1,0 +1,7 @@
+(library
+ (name llama_driver)
+ (libraries async core file_path llama_frontend llama_utils)
+ (preprocess
+  (pps ppx_jane))
+ ;;
+ )
