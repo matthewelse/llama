@@ -32,8 +32,12 @@ let rec pp_type' formatter (ty : Type.t) ~tvs =
       vars;
     Format.pp_print_string formatter ") ";
     Format.pp_print_string formatter (Type.Name.to_string n)
-  | Fun (l, r) ->
-    pp_type' formatter l ~tvs;
+  | Fun (args, r) ->
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " -> ")
+      (pp_type' ~tvs)
+      formatter
+      args;
     Format.pp_print_string formatter " -> ";
     pp_type' formatter r ~tvs
   | Tuple ts ->
@@ -94,11 +98,21 @@ let rec pp_expr formatter (expr : Expression.t) =
   | Apply (f, arg) ->
     pp_expr formatter f;
     Format.pp_print_char formatter '(';
-    pp_expr formatter arg;
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+      pp_expr
+      formatter
+      arg;
     Format.pp_print_char formatter ')'
-  | Lambda (ident, body) ->
+  | Lambda (args, body) ->
     Format.pp_print_string formatter "fun ";
-    pp_ident formatter ident;
+    Format.pp_print_char formatter '(';
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+      pp_ident
+      formatter
+      args;
+    Format.pp_print_char formatter ')';
     Format.pp_print_string formatter " -> ";
     pp_expr formatter body
   | Let { name; value; in_ } ->

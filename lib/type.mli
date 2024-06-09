@@ -18,7 +18,7 @@ end
 type t =
   | Var of Var.t
   | Apply of Name.t * t list
-  | Fun of t * t
+  | Fun of t list * t
   | Tuple of t list
   | Intrinsic of Intrinsic.Type.t
 [@@deriving sexp_of]

@@ -19,15 +19,15 @@ let%expect_test "experiment" =
         ; intrinsic = Add_int
         ; type_ =
             { quantifiers = Type.Var.Set.empty
-            ; ty = Fun (Type.const ty_int, Fun (Type.const ty_int, Type.const ty_int))
+            ; ty = Fun ([ Type.const ty_int; Type.const ty_int ], Type.const ty_int)
             }
         }
     ; Let
         { name = Ident.of_string "x"
         ; value =
             Apply
-              ( Apply (Expression.var (Ident.of_string "add"), Expression.const_int 10)
-              , Expression.const_int 50 )
+              ( Expression.var (Ident.of_string "add")
+              , [ Expression.const_int 10; Expression.const_int 50 ] )
         }
     ; Type_declaration
         { name = Type.Name.of_string "unit"
@@ -68,7 +68,7 @@ let%expect_test "experiment" =
     {|
     type int = %int
     intrinsic add : int -> int -> int = %add_int
-    let x = add(10)(50)
+    let x = add(10, 50)
     type unit = | Unit
     type 'a option = | None | Some of 'a
     let x = None
@@ -82,11 +82,12 @@ let%expect_test "experiment" =
          * Type.Constructor.t Type.Name.Map.t
          * Type.Name.t Constructor.Map.t
          * Type.Name.t Field_name.Map.t)];
-  [%expect {|
+  [%expect
+    {|
     (results
      (((add
         ((quantifiers ())
-         (ty (Fun (Apply int ()) (Fun (Apply int ()) (Apply int ()))))))
+         (ty (Fun ((Apply int ()) (Apply int ())) (Apply int ())))))
        (x ((quantifiers ()) (ty (Apply option ((Intrinsic Int)))))))
       ((int ((shape (Alias (Intrinsic Int))) (args ())))
        (option

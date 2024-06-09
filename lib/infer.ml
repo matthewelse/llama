@@ -22,31 +22,34 @@ let rec type_of
     in
     let type_ = Type.Poly.init poly_type in
     Ok (Type.Var.Map.empty, type_)
-  | Apply (l, r) ->
-    let%bind s1, type_l = type_of l env tyenv constructors fields in
-    let env = subst_env env ~replacements:s1 in
-    let%bind s2, type_r = type_of r env tyenv constructors fields in
-    let s = Map.merge_skewed s1 s2 ~combine:(fun ~key:_ _ t2 -> t2) in
+  | Apply (l, args) ->
+    let%bind s, type_l = type_of l env tyenv constructors fields in
+    let env = subst_env env ~replacements:s in
+    let%bind s, arg_types =
+      List.fold_result args ~init:(s, []) ~f:(fun (replacements, arg_types) arg ->
+        let%bind replacements', ty = type_of arg env tyenv constructors fields in
+        Ok
+          ( Map.merge_skewed replacements replacements' ~combine:(fun ~key:_ _ t2 -> t2)
+          , ty :: arg_types ))
+    in
     let type_l = Type.subst type_l ~replacements:s in
     (* Unify *)
     let result_var = Type.Var (Type.Var.create ()) in
-    let s = Type.unify' type_l (Fun (type_r, result_var)) ~tyenv ~acc:s in
+    let s = Type.unify' type_l (Fun (arg_types, result_var)) ~tyenv ~acc:s in
     Ok (s, Type.subst result_var ~replacements:s)
-  | Lambda (name, body) ->
-    let name_var = Type.Var.create () in
+  | Lambda (args, body) ->
+    let name_vars = List.map args ~f:(fun name -> name, Type.Var.create ()) in
     let%bind s, body_type =
       type_of
         body
-        (Map.set
-           env
-           ~key:name
-           ~data:{ ty = Var name_var; quantifiers = Type.Var.Set.empty })
+        (List.fold name_vars ~init:env ~f:(fun env (name, var) ->
+           Map.set env ~key:name ~data:{ ty = Var var; quantifiers = Type.Var.Set.empty }))
         tyenv
         constructors
         fields
     in
     let body_type = Type.subst body_type ~replacements:s in
-    Ok (s, Type.Fun (Var name_var, body_type))
+    Ok (s, Type.Fun (List.map name_vars ~f:(fun (_, var) -> Type.Var var), body_type))
   | Let { name; value; in_ } ->
     let%bind s1, t1 = type_of value env tyenv constructors fields in
     let generalized_type = Type.generalize t1 ~env in

@@ -17,8 +17,8 @@ end
 
 type t =
   | Var of Ident.t
-  | Apply of t * t
-  | Lambda of Ident.t * t
+  | Apply of t * t list
+  | Lambda of Ident.t list * t
   | Let of
       { name : Ident.t
       ; value : t

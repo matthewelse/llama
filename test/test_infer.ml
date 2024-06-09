@@ -21,14 +21,14 @@ let%expect_test "examples" =
   let ident = Ident.of_string in
   let x = ident "x" in
   let y = ident "y" in
-  let id : Expression.t = lambda x (var x) in
+  let id : Expression.t = lambda [ x ] (var x) in
   type_of id;
   [%expect {| 'a. 'a -> 'a |}];
-  let first : Expression.t = lambda x (lambda y (var x)) in
+  let first : Expression.t = lambda [ x; y ] (var x) in
   type_of first;
   [%expect {| 'a 'b. 'a -> 'b -> 'a |}];
   let swap : Expression.t =
-    Lambda (ident "x", Lambda (ident "y", Tuple [ Var (ident "x"); Var (ident "y") ]))
+    Lambda ([ x; y ], Tuple [ Var (ident "x"); Var (ident "y") ])
   in
   type_of swap;
   [%expect {| 'a 'b. 'a -> 'b -> ('b * 'a) |}];
@@ -39,8 +39,8 @@ let%expect_test "examples" =
       ~in_:
         (let_
            ~name:(ident "_")
-           ~value:(Apply (Var (ident "id"), zero))
-           ~in_:(Apply (Var (ident "id"), Const (String "hello, world"))))
+           ~value:(Apply (Var (ident "id"), [ zero ]))
+           ~in_:(Apply (Var (ident "id"), [ Const (String "hello, world") ])))
   in
   type_of we_love_polymorphism;
   [%expect {| %string |}]

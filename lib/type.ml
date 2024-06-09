@@ -15,7 +15,7 @@ module Id = Unique_id.Int ()
 type t =
   | Var of Var.t
   | Apply of Name.t * t list
-  | Fun of t * t
+  | Fun of t list * t
   | Tuple of t list
   | Intrinsic of Intrinsic.Type.t
 [@@deriving sexp_of]
@@ -28,7 +28,11 @@ let rec free_type_vars t =
   | Var v -> Var.Set.singleton v
   | Apply (_, ts) ->
     List.fold ts ~init:Var.Set.empty ~f:(fun acc t -> Set.union acc (free_type_vars t))
-  | Fun (l, r) -> Set.union (free_type_vars l) (free_type_vars r)
+  | Fun (args, r) ->
+    Set.union
+      (List.fold args ~init:Var.Set.empty ~f:(fun acc l ->
+         Set.union acc (free_type_vars l)))
+      (free_type_vars r)
   | Tuple ts ->
     List.fold ts ~init:Var.Set.empty ~f:(fun acc t -> Set.union acc (free_type_vars t))
   | Intrinsic _ -> Var.Set.empty
@@ -38,7 +42,7 @@ let rec occurs t ~var =
   match t with
   | Var var' -> Var.equal var var'
   | Apply (_, ts) -> List.exists ts ~f:(fun t -> occurs t ~var)
-  | Fun (t1, t2) -> occurs t1 ~var || occurs t2 ~var
+  | Fun (args, res) -> List.exists args ~f:(occurs ~var) || occurs res ~var
   | Tuple ts -> List.exists ts ~f:(fun t -> occurs t ~var)
   | Intrinsic _ -> false
 ;;
@@ -50,7 +54,7 @@ let rec subst t ~replacements =
      | Some t -> t
      | None -> Var v)
   | Apply (name, ts) -> Apply (name, List.map ts ~f:(fun t -> subst t ~replacements))
-  | Fun (l, r) -> Fun (subst l ~replacements, subst r ~replacements)
+  | Fun (args, r) -> Fun (List.map args ~f:(subst ~replacements), subst r ~replacements)
   | Tuple ts -> Tuple (List.map ts ~f:(subst ~replacements))
   | Intrinsic _ -> t
 ;;
@@ -133,7 +137,8 @@ and types_are_equivalent t1 t2 tyenv =
     type_names_are_equivalent n1 n2 tyenv
     && List.for_all2_exn l1 l2 ~f:(fun t1 t2 -> types_are_equivalent t1 t2 tyenv)
   | Fun (l1, r1), Fun (l2, r2) ->
-    types_are_equivalent l1 l2 tyenv && types_are_equivalent r1 r2 tyenv
+    List.for_all2_exn l1 l2 ~f:(fun t1 t2 -> types_are_equivalent t1 t2 tyenv)
+    && types_are_equivalent r1 r2 tyenv
   | Tuple l1, Tuple l2 ->
     List.for_all2_exn l1 l2 ~f:(fun t1 t2 -> types_are_equivalent t1 t2 tyenv)
   | Intrinsic i1, Intrinsic i2 -> Intrinsic.Type.equal i1 i2
@@ -154,7 +159,9 @@ let rec unify' t1 t2 ~tyenv ~acc : t Var.Map.t =
   | Var v, t | t, Var v ->
     if occurs t ~var:v then failwith "occur check failed" else Map.set acc ~key:v ~data:t
   | Fun (l1, r1), Fun (l2, r2) ->
-    let acc = unify' l1 l2 ~tyenv ~acc in
+    let acc =
+      List.fold2_exn l1 l2 ~init:acc ~f:(fun acc t1 t2 -> unify' t1 t2 ~tyenv ~acc)
+    in
     let r1 = subst r1 ~replacements:acc in
     let r2 = subst r2 ~replacements:acc in
     unify' r1 r2 ~tyenv ~acc
