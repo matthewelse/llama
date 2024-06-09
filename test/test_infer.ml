@@ -1,6 +1,5 @@
 open! Core
 open! Import
-open! Llama
 
 let%expect_test "examples" =
   let open Expression in

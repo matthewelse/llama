@@ -34,7 +34,7 @@ let example0 =
 let parse s =
   let lexbuf = Lexing.from_string s in
   let ast = Llama_frontend.Parser.program Llama_frontend.Lexer.read lexbuf in
-  Llama.Pretty_print.pp_ast Format.std_formatter ast;
+  Pretty_print.pp_ast Format.std_formatter ast;
   ast
 ;;
 
@@ -54,8 +54,8 @@ let%expect_test _ =
     let x = Some (1)
     let y = Some (Some (Some (None)))
     |}];
-  let result = Llama.Infer.type_ast ast |> ok_exn in
-  print_s [%message (result : Llama.Infer.Env.t)];
+  let result = Infer.type_ast ast |> ok_exn in
+  print_s [%message (result : Infer.Env.t)];
   [%expect
     {|
     (result (

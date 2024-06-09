@@ -1,6 +1,9 @@
 (library
  (name test_llama)
- (libraries core expect_test_helpers_core llama llama_frontend)
+ (libraries core expect_test_helpers_core llama_typing llama_frontend llama_utils
+
+ ;;
+ )
  (inline_tests)
  (preprocess
   (pps ppx_jane)))

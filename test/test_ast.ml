@@ -1,6 +1,5 @@
 open! Core
 open! Import
-open! Llama
 
 let%expect_test "experiment" =
   Type.Id.For_testing.reset_counter ();

@@ -1,6 +1,5 @@
 open! Core
 open! Import
-open! Llama
 
 let%expect_test _ =
   let pp_tv n = Pretty_print.For_testing.pp_tv' Format.std_formatter n in

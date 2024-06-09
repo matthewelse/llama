@@ -1,9 +1,9 @@
 open! Core
 open! Import
-open! Llama
 
 let%expect_test "example" =
   Type.Var.For_testing.reset_counter ();
+  Type.Id.For_testing.reset_counter ();
   let pp ty = Pretty_print.pp_type Format.std_formatter ty in
   let x = Type.Var.create () in
   let y = Type.Var.create () in
