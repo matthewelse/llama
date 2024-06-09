@@ -195,7 +195,9 @@ let rec pp_expr formatter (expr : Expression.t) =
 ;;
 
 let pp_intrinsic formatter intrinsic =
-  Format.pp_print_string formatter (Intrinsic.Value.to_string intrinsic)
+  Format.pp_print_char formatter '"';
+  Format.pp_print_string formatter (Intrinsic.Value.to_string intrinsic);
+  Format.pp_print_char formatter '"'
 ;;
 
 (* let pp_intrinsic_type formatter intrinsic =

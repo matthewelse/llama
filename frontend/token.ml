@@ -7,9 +7,11 @@ type token =
   | Ident of string
   | Ampersand
   | Array
+  | Arrow
   | Assign
   | Break
   | Colon
+  | Constructor of string
   | Comma
   | Do
   | Dot
@@ -22,6 +24,7 @@ type token =
   | GreaterEqual
   | If
   | In
+  | Intrinsic
   | Lbrace
   | Lbracket
   | Less

@@ -1,4 +1,5 @@
 open! Core
+open! Import
 open! Llama
 
 let%expect_test "experiment" =
@@ -55,7 +56,7 @@ let%expect_test "experiment" =
   [%expect
     {|
     type int = "%int"
-    intrinsic add : int -> int -> int = %add_int
+    intrinsic add : int -> int -> int = "%add_int"
     let x = add(10, 50)
     type unit = | Unit
     type 'a option = | None | Some of 'a
@@ -63,25 +64,29 @@ let%expect_test "experiment" =
     let x = Some (10)
     |}];
   let results = Infer.type_ast ast |> ok_exn in
-  print_s
-    [%message
-      (results
-       : Type.Poly.t Ident.Map.t
-         * Type.Constructor.t Type_name.Map.t
-         * Type_name.t Constructor.Map.t
-         * Type_name.t Field_name.Map.t)];
+  print_s [%message (results : Infer.Env.t)];
   [%expect
     {|
-    (results
-     (((add
-        ((quantifiers ())
-         (ty (Fun ((Apply int ()) (Apply int ())) (Apply int ())))))
-       (x ((quantifiers ()) (ty (Apply option ((Intrinsic Int)))))))
-      ((int ((shape (Alias (Intrinsic Int))) (args ())))
-       (option
-        ((shape (Variant (constructors ((None ()) (Some ((Var 1))))) (id 1)))
-         (args (1))))
-       (unit ((shape (Variant (constructors ((Unit ()))) (id 0))) (args ()))))
-      ((None option) (Some option) (Unit unit)) ()))
+    (results (
+      (values (
+        (add (
+          (quantifiers ())
+          (ty (
+            Fun
+            ((Apply int ())
+             (Apply int ()))
+            (Apply int ())))))
+        (x ((quantifiers ()) (ty (Apply option ((Intrinsic Int))))))))
+      (type_declarations (
+        (int ((shape (Alias (Intrinsic Int))) (args ())))
+        (option (
+          (shape (Variant (constructors ((None ()) (Some ((Var 1))))) (id 1)))
+          (args (1))))
+        (unit ((shape (Variant (constructors ((Unit ()))) (id 0))) (args ())))))
+      (constructors (
+        (None option)
+        (Some option)
+        (Unit unit)))
+      (fields ())))
     |}]
 ;;

@@ -1,4 +1,5 @@
 open! Core
+open! Import
 open! Llama
 
 let%expect_test "example" =
@@ -30,8 +31,18 @@ let%expect_test "example" =
   print_s [%sexp (u : Type.t Type.Var.Map.t)];
   [%expect
     {|
-    ((0 (Apply f ((Var 1) (Var 1)))) (1 (Apply f ((Var 2) (Var 2))))
-     (2 (Apply f ((Apply a ()) (Apply a ())))))
+    ((0 (
+       Apply f (
+         (Var 1)
+         (Var 1))))
+     (1 (
+       Apply f (
+         (Var 2)
+         (Var 2))))
+     (2 (
+       Apply f (
+         (Apply a ())
+         (Apply a ())))))
     |}];
   let t3 = Type.subst t1 ~replacements:u in
   pp t3;

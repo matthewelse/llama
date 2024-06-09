@@ -7,11 +7,13 @@ open Expression
 %}
 
 %token<string> Int    "int"
+%token<string> Constructor "constructor"
 %token<string> String "string"
 %token<string> Type_var "type_var"
 %token<string> Ident
 %token Ampersand    "&"
 %token Array        "array"
+%token Arrow        "->"
 %token Assign       ":="
 %token Break        "break"
 %token Colon        ":"
@@ -27,6 +29,7 @@ open Expression
 %token GreaterEqual ">="
 %token If           "if"
 %token In           "in"
+%token Intrinsic    "intrinsic"
 %token Lbrace       "{"
 %token Lbracket     "["
 %token Less         "<"
@@ -60,6 +63,7 @@ open Expression
 %nonassoc LessEqual, GreaterEqual, Less, Greater, NotEqual, Equal
 %left Plus, Minus
 %left Star, Slash
+%right Arrow
 
 %start<Ast.t> program
 
@@ -72,7 +76,7 @@ let program := ~ = list(structure_item); Eof; <>
 let structure_item :=
   | ~ = type_declaration;      <Structure_item.Type_declaration>
   | ~ = let_binding;           <Structure_item.Let>
-  (* | ~ = intrinsic_declaration; <Structure_item.Intrinsic> *)
+  | ~ = intrinsic_declaration; <Structure_item.Intrinsic>
 
 (* Global variable declarations *)
 
@@ -120,15 +124,37 @@ let type_desc :=
   | id = type_id;                     { Type_shape.Alias (Apply (id, [])) }
   | "{"; fields = record_fields; "}"; { Type_shape.Record { fields } }
   | name = String;                    { Type_shape.Alias (Intrinsic (Intrinsic.Type.of_string name)) }
+  | constructors = variant;           { Type_shape.Variant { constructors } }
+
+let variant :=
+  | option("|"); constructors = separated_list("|", constructor); { constructors }
+
+let constructor :=
+  | ~ = constructor_name; "of"; ~ = type_; { (constructor_name, Some type_) }
+  | ~ = constructor_name; { (constructor_name, None) }
 
 let record_fields == separated_nonempty_list(";", record_field)
 
 let record_field :=
   | field_name = field_id; ":"; ~ = type_; { (field_name, type_) }
 
-let type_ :=
+let intrinsic_declaration :=
+  | "intrinsic"; name = ident; ":"; ~ = type_; "="; intrinsic_name = String; {
+    { Value_intrinsic.name; intrinsic = Intrinsic.Value.of_string intrinsic_name; type_ = { quantifiers = []; ty = type_ } }
+  }
+
+let base_type :=
   | ~ = Type_var;    <Type.Var>
   | ~ = type_id;     { Type.Apply (type_id, []) }
+  | "("; ~ = type_; ")"; <>
+
+let type_ :=
+  | ~ = base_type; "->"; ~ = type_; {
+    match (type_ : Type.t) with
+    | Fun (args, ret) -> Type.Fun (args @ [ base_type ], ret)
+    | _ -> Type.Fun([ base_type ], type_)
+  }
+  | ~ = base_type; { base_type }
 
 (* Expressions *)
 
@@ -155,8 +181,11 @@ let one_expression :=
   | "for"; ~ = ident; ":="; lo = expression; "to"; hi = expression; "do"; body = expression; { For { ident; lo; hi; body } }
   | "break"; { Break } *)
   (* | "let"; ~ = declarations; "in"; exps = separated_list(";", expression); "end"; { Let { declarations; exps } } *)
+  | constructor = constructor_name; ~ = expression; { Construct (constructor, Some expression) }
+  | constructor = constructor_name; { Construct (constructor, None) }
   | func = ident; "("; args = separated_list(",", expression); ")"; { Apply (Var func, args) }
-  | "("; args = separated_nonempty_list(",", expression); ")"; { Tuple (args) }
+  | "("; ~ = expression; ")"; { expression }
+  | "("; fst = expression; ","; args = separated_nonempty_list(",", expression); ")"; { Tuple (fst :: args) }
 
 (*
 let expr_record_field :=
@@ -201,3 +230,6 @@ let field_id ==
 
 let ident ==
   | ~ = Ident; <Ident.of_string>
+
+let constructor_name ==
+  | ~ = Constructor; <Constructor.of_string>

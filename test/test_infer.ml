@@ -1,18 +1,11 @@
 open! Core
+open! Import
 open! Llama
 
 let%expect_test "examples" =
   let open Expression in
   let type_of expr =
-    let typ =
-      Infer.type_of_let_binding
-        expr
-        ~env:Ident.Map.empty
-        ~tyenv:Type_name.Map.empty
-        ~constructors:Constructor.Map.empty
-        ~fields:Field_name.Map.empty
-      |> ok_exn
-    in
+    let typ = Infer.type_of_let_binding expr Infer.Env.empty |> ok_exn in
     Pretty_print.pp_polytype Format.std_formatter typ
   in
   let zero = const_int 0 in

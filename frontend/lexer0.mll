@@ -12,7 +12,8 @@ let int = digit digit*
 
 let white = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
-let id = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
+let id = ['a'-'z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
+let constructor = ['A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 let atom = [ '0'-'9' '_' ]+
 let string = "\"" ['a'-'z' 'A'-'Z' '0'-'9' '_' ' ' '\\' '.' '-' '%']* "\""
 let type_var = "'" ['a'-'z'] ['a'-'z' '0'-'9' '_']*
@@ -22,6 +23,7 @@ rule read =
   | white    { read lexbuf }
   | newline  { Lexing.new_line lexbuf; read lexbuf }
   (* | '!'      { Bang } *)
+  | "->"     { Arrow }
   | ":="     { Assign }
   | ':'      { Colon }
   | ';'      { Semicolon }
@@ -62,7 +64,9 @@ rule read =
   | "do"     { Do }
   | "break"  { Break }
   | "end"    { End }
+  | "intrinsic" { Intrinsic }
   | id       { Ident (Lexing.lexeme lexbuf)}
+  | constructor { Constructor (Lexing.lexeme lexbuf)}
   | int      { Int (Lexing.lexeme lexbuf) }
   | type_var { Type_var (Lexing.lexeme lexbuf) }
   | string   { String (

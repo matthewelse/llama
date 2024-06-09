@@ -3,7 +3,7 @@ open! Core
 module Value : sig
   type t = Add_int [@@deriving variants, sexp_of]
 
-  val to_string : t -> string
+  include Stringable.S with type t := t
 end
 
 module Type : sig
@@ -12,6 +12,5 @@ module Type : sig
     | String
   [@@deriving enumerate, equal, variants, sexp_of]
 
-  val to_string : t -> string
-  val of_string : string -> t
+  include Stringable.S with type t := t
 end
