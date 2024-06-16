@@ -12,3 +12,11 @@
  (flags
   (--external-tokens Token --exn-carries-state --dump))
  (explain true))
+
+(rule
+ (target errors.ml)
+ (deps parser.mly parser.messages)
+ (action
+  (with-stdout-to
+   %{target}
+   (run menhir --compile-errors parser.messages parser.mly))))
