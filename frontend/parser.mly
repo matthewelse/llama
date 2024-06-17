@@ -84,20 +84,6 @@ let let_binding ==
 
 (* Function declarations *)
 
-let function_declaration ==
-  | "function"; ~ = ident; "("; formal_args = func_params; ")"; "=";
-    body = expression;
-    { { Function_declaration.ident; formal_args; return_type = None; body } }
-  | "function"; ~ = ident; "("; formal_args = func_params; ")"; ":"; return_type = type_id; "=";
-    body = expression;
-    { { Function_declaration.ident; formal_args; return_type = Some return_type; body } }
-
-
-let func_params == separated_list(",", func_param)
-
-let func_param :=
-  | ~ = ident; ":"; ~ = type_id; <>
-
 (* Type declarations *)
 
 let type_vars ==
