@@ -56,6 +56,7 @@ let repl =
       fun () ->
         while
           let code = LNoise.linenoise "llama> " in
+          (* FIXME melse: can we handle EOF? *)
           match code with
           | Some ".exit" -> false
           | Some code ->
@@ -64,7 +65,7 @@ let repl =
             Lexing.set_filename lexbuf "<stdin>";
             parse_with_error_reporting lexbuf ~get_code:(fun () -> code) ~dump_ast:true;
             true
-          | None -> false
+          | None -> (* This usually means sigint *) false
         do
           ()
         done;
