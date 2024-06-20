@@ -28,6 +28,7 @@ let example0 =
 
   let x = Some 1
   let y = Some (Some (Some None))
+  let z = { d = 10 }
   |}
 ;;
 
@@ -53,6 +54,7 @@ let%expect_test _ =
     type 'a option = | None | Some of 'a
     let x = Some (1)
     let y = Some (Some (Some (None)))
+    let z = {d = 10}
     |}];
   let result = Infer.type_ast ast |> ok_exn in
   print_s [%message (result : Infer.Env.t)];
@@ -82,7 +84,8 @@ let%expect_test _ =
           (quantifiers (7))
           (ty (
             Apply option ((
-              Apply option ((Apply option ((Apply option ((Var 7))))))))))))))
+              Apply option ((Apply option ((Apply option ((Var 7))))))))))))
+        (z ((quantifiers (8)) (ty (Apply t2 ((Var 8))))))))
       (type_declarations (
         (int ((shape (Alias (Intrinsic Int))) (args ())))
         (option (

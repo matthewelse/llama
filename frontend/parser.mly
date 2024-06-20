@@ -151,7 +151,7 @@ let one_expression :=
   | ~ = literal; <Const>
   (* | "-"; ~ = expression; <Negative> *)
   (* | e1 = expression; ~ = binop; e2 = expression; { Binary (binop, e1, e2) } *)
-  (* | record_type = type_id; "{"; ~ = separated_nonempty_list(",", expr_record_field); "}"; <Record> *)
+  | "{"; ~ = separated_nonempty_list(",", expr_record_field); "}"; <Record>
   (* We need some redundant indexing rules to work around shift/reduce conflicts. *)
   (* | element_type = type_id; "["; size = expression; "]"; "of"; init = expression;
     { Array { element_type; size; init } } *)
@@ -172,10 +172,8 @@ let one_expression :=
   | "("; ~ = expression; ")"; { expression }
   | "("; fst = expression; ","; args = separated_nonempty_list(",", expression); ")"; { Tuple (fst :: args) }
 
-(*
 let expr_record_field :=
   | ~ = field_id; "="; ~ = expression; <>
-*)
 
 (* let binop ==
   | "|";  { Binary_operator.Or }

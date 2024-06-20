@@ -18,7 +18,7 @@ module Env = struct
     }
   ;;
 
-  let _field t name =
+  let field t name =
     Map.find t.fields name
     |> Or_error.of_option
          ~error:(Error.of_string [%string "Unbound field [%{name#Field_name}]"])
@@ -107,6 +107,7 @@ let rec type_of (expr : Expression.t) (env : Env.t)
     Ok (s, Type.Fun (List.map name_vars ~f:(fun (_, var) -> Type.Var var), body_type))
   | Let { name; value; in_ } ->
     let%bind s1, t1 = type_of value env in
+    (* FIXME melse: Don't generalize types if they're values. *)
     let generalized_type = Type.generalize t1 ~env:env.values in
     let env = Env.with_var (Env.subst env ~replacements:s1) name generalized_type in
     type_of in_ env
@@ -172,42 +173,53 @@ let rec type_of (expr : Expression.t) (env : Env.t)
          Type.Apply (type_name, type_args) |> Type.subst ~replacements:s
        in
        Ok (s, result_type))
-  | Record _ ->
-    (* let%bind first_field, _ =
-          List.hd fields
-          |> Or_error.of_option ~error:(Error.of_string "Record must have at least one field")
-        in
-        let%bind type_name = Env.field env first_field in
-        let decl_fields, args =
-          let%tydi { shape; args } = Map.find_exn env.type_declarations type_name in
-          match shape with
-          | Record { fields; _ } -> fields, args
-          | _ ->
-            (* This should be an internal compiler error *)
-            assert false
-        in
-        let type_args = List.map args ~f:(fun _ -> Type.Var (Type.Var.create ())) in
-        let subst = List.zip_exn args type_args |> Type.Var.Map.of_alist_exn in
-        let field_types =
-          let decl_fields = List.sort decl_fields ~compare:[%compare: Field_name.t * _] in
-          let fields = List.sort fields ~compare:[%compare: Field_name.t * _] in
-          List.map2_exn decl_fields fields ~f:(fun (decl_field, typ) (field, expr_typ) ->
-            assert (Field_name.equal decl_field field);
-            let decl_type = Type.subst typ ~replacements:subst in
-            let%bind.Or_error s, expr_type = type_of expr_typ env in
-            Ok ())
-        in
-        let%bind s, arg_type = type_of arg env in
-        let s =
+  | Record fields ->
+    (* 1. Infer the type of the record from the field name. This obviously isn't great,
+       but whatever. *)
+    let%bind first_field, _ =
+      List.hd fields
+      |> Or_error.of_option ~error:(Error.of_string "Record must have at least one field")
+    in
+    let%bind type_name = Env.field env first_field in
+    (* 2. Get the shape of the type. *)
+    let decl_fields, args =
+      let%tydi { shape; args } = Map.find_exn env.type_declarations type_name in
+      match shape with
+      | Record { fields; _ } -> fields, args
+      | _ ->
+        (* This should be an internal compiler error: we should never have added a reference from
+           the field name to the type if it wasn't a record. *)
+        assert false
+    in
+    (* 3. Create a fresh type variable for each of the type arguments. *)
+    let type_args = List.map args ~f:(fun _ -> Type.Var (Type.Var.create ())) in
+    (* 4. Substitute the fresh type args for the original type args in the type of each field. *)
+    let subst = List.zip_exn args type_args |> Type.Var.Map.of_alist_exn in
+    let s =
+      let decl_fields = List.sort decl_fields ~compare:[%compare: Field_name.t * _] in
+      let fields = List.sort fields ~compare:[%compare: Field_name.t * _] in
+      List.fold2_exn
+        decl_fields
+        fields
+        ~init:Type.Var.Map.empty
+        ~f:(fun acc (decl_field, typ) (field, expr_typ) ->
+          (* FIXME: proper error handling *)
+          assert (Field_name.equal decl_field field);
+          let decl_type = Type.subst typ ~replacements:subst in
+          (* 5. Unify the types of each field expression with the expected type of each field. *)
+          let s, expr_type =
+            (* FIXME: proper error handling *)
+            Or_error.ok_exn @@ type_of expr_typ env
+          in
+          let s = Map.merge_skewed s acc ~combine:(fun ~key:_ _ t2 -> t2) in
           Type.unify'
-            arg_type
-            (Type.subst constructor_arg_typ ~replacements:s)
+            expr_type
+            (Type.subst decl_type ~replacements:s)
             ~tyenv:env.type_declarations
-            ~acc:s
-        in
-        let result_type = Type.Apply (type_name, type_args) |> Type.subst ~replacements:s in
-        Ok (s, result_type)*)
-    failwith "todo"
+            ~acc:s)
+    in
+    let result_type = Type.Apply (type_name, type_args) |> Type.subst ~replacements:s in
+    Ok (s, result_type)
 ;;
 
 let type_of expr env =

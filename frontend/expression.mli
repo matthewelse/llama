@@ -21,7 +21,8 @@ type t =
       }
   | Const of Const.t
   | Tuple of t list
-  | Construct of Constructor.t * t option (* | Sequence of t list*)
+  | Construct of Constructor.t * t option
+  | Record of (Field_name.t * t) list (* | Sequence of t list*)
 [@@deriving sexp_of, variants]
 
 val const_int : int -> t

@@ -192,6 +192,17 @@ let rec pp_expr formatter (expr : Expression.t) =
        Format.pp_print_string formatter " (";
        pp_expr formatter arg;
        Format.pp_print_string formatter ")")
+  | Record fields ->
+    Format.pp_print_char formatter '{';
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter "; ")
+      (fun formatter (ident, expr) ->
+        Format.pp_print_string formatter (Field_name.to_string ident);
+        Format.pp_print_string formatter " = ";
+        pp_expr formatter expr)
+      formatter
+      fields;
+    Format.pp_print_char formatter '}'
 ;;
 
 let pp_intrinsic formatter intrinsic =
