@@ -18,6 +18,12 @@ module Env = struct
     }
   ;;
 
+  let _field t name =
+    Map.find t.fields name
+    |> Or_error.of_option
+         ~error:(Error.of_string [%string "Unbound field [%{name#Field_name}]"])
+  ;;
+
   let constructor t name =
     Map.find t.constructors name
     |> Or_error.of_option
@@ -166,6 +172,42 @@ let rec type_of (expr : Expression.t) (env : Env.t)
          Type.Apply (type_name, type_args) |> Type.subst ~replacements:s
        in
        Ok (s, result_type))
+  | Record _ ->
+    (* let%bind first_field, _ =
+          List.hd fields
+          |> Or_error.of_option ~error:(Error.of_string "Record must have at least one field")
+        in
+        let%bind type_name = Env.field env first_field in
+        let decl_fields, args =
+          let%tydi { shape; args } = Map.find_exn env.type_declarations type_name in
+          match shape with
+          | Record { fields; _ } -> fields, args
+          | _ ->
+            (* This should be an internal compiler error *)
+            assert false
+        in
+        let type_args = List.map args ~f:(fun _ -> Type.Var (Type.Var.create ())) in
+        let subst = List.zip_exn args type_args |> Type.Var.Map.of_alist_exn in
+        let field_types =
+          let decl_fields = List.sort decl_fields ~compare:[%compare: Field_name.t * _] in
+          let fields = List.sort fields ~compare:[%compare: Field_name.t * _] in
+          List.map2_exn decl_fields fields ~f:(fun (decl_field, typ) (field, expr_typ) ->
+            assert (Field_name.equal decl_field field);
+            let decl_type = Type.subst typ ~replacements:subst in
+            let%bind.Or_error s, expr_type = type_of expr_typ env in
+            Ok ())
+        in
+        let%bind s, arg_type = type_of arg env in
+        let s =
+          Type.unify'
+            arg_type
+            (Type.subst constructor_arg_typ ~replacements:s)
+            ~tyenv:env.type_declarations
+            ~acc:s
+        in
+        let result_type = Type.Apply (type_name, type_args) |> Type.subst ~replacements:s in
+        Ok (s, result_type)*)
+    failwith "todo"
 ;;
 
 let type_of expr env =
@@ -191,8 +233,7 @@ let type_of_let_binding t env =
   Ok (Type.generalize ty ~env:env.values)
 ;;
 
-let type_ast (ast : Ast.t) =
-  let env = Env.empty in
+let type_ast ?(env = Env.empty) (ast : Ast.t) =
   List.fold_result ast ~init:env ~f:(fun env structure_item ->
     match structure_item with
     | Let { name; value } ->

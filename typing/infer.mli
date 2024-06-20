@@ -14,4 +14,4 @@ module Env : sig
 end
 
 val type_of_let_binding : Expression.t -> Env.t -> Type.Poly.t Or_error.t
-val type_ast : Ast.t -> Env.t Or_error.t
+val type_ast : ?env:Env.t -> Ast.t -> Env.t Or_error.t

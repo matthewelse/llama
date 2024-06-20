@@ -89,7 +89,16 @@ let create ?error_code ?message ~code ~labels ~error_offset level =
 
 let relevant_code t = Labels.relevant_code t.labels t.code
 
-let render t =
+let should_colour =
+  lazy
+    (let term = Sys.getenv "TERM" in
+     Option.is_none (Sys.getenv "NO_COLOR")
+     && Option.is_some term
+     && (not ([%compare.equal: string option] term (Some "dumb")))
+     && not (Expect_test_helpers_core.am_running_expect_test ()))
+;;
+
+let render t fmt =
   (*
      {v
      error[$error_code]: $message
@@ -110,6 +119,7 @@ let render t =
      $X: vertical sections for spans
      v}
   *)
+  if force should_colour then Ocolor_format.prettify_formatter fmt;
   let start_line = Labels.start_line t.labels in
   let relevant_code = Labels.relevant_code t.labels t.code |> String.split_lines in
   let message = Option.value ~default:"" t.message in
@@ -123,38 +133,37 @@ let render t =
     String.length (Int.to_string (List.length relevant_code))
   in
   let space_padding = String.make (max_line_number_length + 1) ' ' in
-  let header =
-    [ [%string {|error%{error_code}: %{message}|}]
-    ; [%string
-        "%{space_padding}╭─[%{t.error_offset.pos_fname}:%{t.error_offset.pos_lnum#Int}:%{t.error_offset.pos_cnum \
-         - t.error_offset.pos_bol#Int}]"]
-    ]
+  Format.fprintf fmt {|@{<red>error%s:@} %s|} error_code message;
+  Format.pp_print_newline fmt ();
+  Format.pp_print_string
+    fmt
+    [%string
+      "%{space_padding}╭─[%{t.error_offset.pos_fname}:%{t.error_offset.pos_lnum#Int}:%{t.error_offset.pos_cnum \
+       - t.error_offset.pos_bol#Int}]"];
+  Format.pp_print_newline fmt ();
+  List.iteri relevant_code ~f:(fun i line ->
+    let line_number = start_line + i in
+    let labels = Map.find_multi single_line_labels line_number in
+    Format.pp_print_string fmt [%string "%{line_number#Int} │ %{line}"];
+    Format.pp_print_newline fmt ();
+    List.iter labels ~f:(fun (primary_or_secondary, label) ->
+      let annotation_char =
+        match primary_or_secondary with
+        | `Primary -> '^'
+        | `Secondary -> '-'
+      in
+      let annotation =
+        let start_col, end_col = Span.col_range label.span in
+        String.make start_col ' ' ^ String.make (end_col - start_col) annotation_char
+      in
+      let spaces = space_padding in
+      Format.pp_print_string fmt [%string "%{spaces}┆ %{annotation} %{label.message}"];
+      Format.pp_print_newline fmt ()));
+  let horizontal_part =
+    List.init (max_line_number_length + 1) ~f:(Fn.const "─") |> String.concat
   in
-  let code_lines =
-    List.concat_mapi relevant_code ~f:(fun i line ->
-      let line_number = start_line + i in
-      let labels = Map.find_multi single_line_labels line_number in
-      [ [%string "%{line_number#Int} │ %{line}"] ]
-      @ List.map labels ~f:(fun (primary_or_secondary, label) ->
-        let annotation_char =
-          match primary_or_secondary with
-          | `Primary -> '^'
-          | `Secondary -> '-'
-        in
-        let annotation =
-          let start_col, end_col = Span.col_range label.span in
-          String.make start_col ' ' ^ String.make (end_col - start_col) annotation_char
-        in
-        let spaces = space_padding in
-        [%string "%{spaces}┆ %{annotation} %{label.message}"]))
-  in
-  let footer_lines =
-    let horizontal_part =
-      List.init (max_line_number_length + 1) ~f:(Fn.const "─") |> String.concat
-    in
-    [ [%string "%{horizontal_part}╯"] ]
-  in
-  String.concat_lines (header @ code_lines @ footer_lines)
+  Format.pp_print_string fmt [%string "%{horizontal_part}╯"];
+  Format.pp_print_newline fmt ()
 ;;
 
 let unindent code =
@@ -263,7 +272,7 @@ fizz num =
     \        _ 0 => \"Buzz\"\n\
     \        _ _ => num";
   [%expect {||}];
-  render t |> print_endline;
+  render t Format.std_formatter;
   [%expect
     {|
     error[E0308]: `case` clauses have incompatible types
