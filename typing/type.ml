@@ -164,7 +164,18 @@ and types_are_equivalent t1 t2 tyenv =
   | _ -> false
 ;;
 
+let debug = false
+
 let rec unify' t1 t2 ~tyenv ~acc : t Var.Map.t =
+  if debug
+  then
+    eprint_s
+      [%message
+        "unify"
+          (t1 : t)
+          (t2 : t)
+          (tyenv : Constructor.t Type_name.Map.t)
+          (acc : t Var.Map.t)];
   match t1, t2 with
   | Apply (n1, l1), Apply (n2, l2) ->
     if type_names_are_equivalent n1 n2 tyenv

@@ -20,7 +20,7 @@ let%expect_test "examples" =
   type_of first;
   [%expect {| 'a 'b. 'a -> 'b -> 'a |}];
   let swap : Expression.t =
-    Lambda ([ x; y ], Tuple [ Var (ident "x"); Var (ident "y") ])
+    Lambda ([ x; y ], Tuple [ Var (ident "y"); Var (ident "x") ])
   in
   type_of swap;
   [%expect {| 'a 'b. 'a -> 'b -> ('b * 'a) |}];

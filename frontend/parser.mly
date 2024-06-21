@@ -131,15 +131,24 @@ let intrinsic_declaration :=
 let base_type :=
   | ~ = Type_var;    <Type.Var>
   | ~ = type_id;     { Type.Apply (type_id, []) }
+  | type_var = Type_var; ~ = type_id;     { Type.Apply (type_id, [ Type.Var type_var ]) }
   | "("; ~ = type_; ")"; <>
 
-let type_ :=
-  | ~ = base_type; "->"; ~ = type_; {
-    match (type_ : Type.t) with
-    | Fun (args, ret) -> Type.Fun (args @ [ base_type ], ret)
-    | _ -> Type.Fun([ base_type ], type_)
+let inter_type :=
+  | ~ = base_type; "*"; ~ = inter_type; {
+    match (inter_type : Type.t) with
+    | Tuple elems -> Type.Tuple (base_type :: elems)
+    | _ -> Type.Tuple([ base_type; inter_type ])
   }
   | ~ = base_type; { base_type }
+
+let type_ :=
+  | ~ = inter_type; "->"; ~ = type_; {
+    match (type_ : Type.t) with
+    | Fun (args, ret) -> Type.Fun (args @ [ inter_type ], ret)
+    | _ -> Type.Fun([ inter_type ], type_)
+  }
+  | ~ = inter_type; { inter_type }
 
 (* Expressions *)
 

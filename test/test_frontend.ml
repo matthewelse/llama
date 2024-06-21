@@ -29,6 +29,12 @@ let example0 =
   let x = Some 1
   let y = Some (Some (Some None))
   let z = { d = 10 }
+
+  type 'a list = | Nil | Cons of 'a * 'a list
+
+  let l = Cons(3, Nil)
+
+  let ll = Cons(1, Cons(2, Cons(3, Nil)))
   |}
 ;;
 
@@ -55,6 +61,9 @@ let%expect_test _ =
     let x = Some (1)
     let y = Some (Some (Some (None)))
     let z = {d = 10}
+    type 'a list = | Nil | Cons of ('a * ('a) list)
+    let l = Cons ((3, Nil))
+    let ll = Cons ((1, Cons ((2, Cons ((3, Nil))))))
     |}];
   let result = Infer.type_ast ast |> ok_exn in
   print_s [%message (result : Infer.Env.t)];
@@ -79,6 +88,8 @@ let%expect_test _ =
               (Intrinsic Int)
               (Intrinsic Int))))))
         (e ((quantifiers ()) (ty (Intrinsic Int))))
+        (l ((quantifiers ()) (ty (Apply list ((Intrinsic Int))))))
+        (ll ((quantifiers ()) (ty (Apply list ((Intrinsic Int))))))
         (x ((quantifiers ()) (ty (Apply option ((Intrinsic Int))))))
         (y (
           (quantifiers (7))
@@ -88,6 +99,13 @@ let%expect_test _ =
         (z ((quantifiers (8)) (ty (Apply t2 ((Var 8))))))))
       (type_declarations (
         (int ((shape (Alias (Intrinsic Int))) (args ())))
+        (list (
+          (shape (
+            Variant
+            (constructors (
+              (Nil ()) (Cons ((Tuple ((Var 9) (Apply list ((Var 9)))))))))
+            (id 3)))
+          (args (9))))
         (option (
           (shape (Variant (constructors ((None ()) (Some ((Var 2))))) (id 2)))
           (args (2))))
@@ -102,6 +120,8 @@ let%expect_test _ =
           (args ())))
         (t2 ((shape (Record (fields ((d (Apply int ())))) (id 1))) (args (1))))))
       (constructors (
+        (Cons list)
+        (Nil  list)
         (None option)
         (Some option)))
       (fields (
