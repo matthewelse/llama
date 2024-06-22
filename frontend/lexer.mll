@@ -65,6 +65,8 @@ rule read =
   | "break"  { Break }
   | "end"    { End }
   | "intrinsic" { Intrinsic }
+  | "match"  { Match }
+  | "with"   { With }
   | id       { Ident (Lexing.lexeme lexbuf)}
   | constructor { Constructor (Lexing.lexeme lexbuf)}
   | int      { Int (Lexing.lexeme lexbuf) }

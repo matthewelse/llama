@@ -22,7 +22,12 @@ type t =
   | Const of Const.t
   | Tuple of t list
   | Construct of Constructor.t * t option
-  | Record of (Field_name.t * t) list (* | Sequence of t list*)
+  | Record of (Field_name.t * t) list
+  | Match of
+      { scrutinee : t
+      ; cases : (Pattern.t * t) list
+      }
+    (* | Sequence of t list*)
 [@@deriving sexp_of, variants]
 
 val const_int : int -> t

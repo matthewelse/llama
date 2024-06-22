@@ -34,7 +34,9 @@ let example0 =
 
   let l = Cons(3, Nil)
 
-  let ll = Cons(1, Cons(2, Cons(3, Nil)))
+  let m = Cons(1, Cons(2, Cons(3, Nil)))
+
+  let n = match l with | Nil -> 0 | Cons (a, b) -> 10
   |}
 ;;
 
@@ -63,7 +65,11 @@ let%expect_test _ =
     let z = {d = 10}
     type 'a list = | Nil | Cons of ('a * ('a) list)
     let l = Cons ((3, Nil))
-    let ll = Cons ((1, Cons ((2, Cons ((3, Nil))))))
+    let m = Cons ((1, Cons ((2, Cons ((3, Nil))))))
+    let n = match l with
+
+      | Nil -> 0
+      | Cons (a, b) -> 10
     |}];
   let result = Infer.type_ast ast |> ok_exn in
   print_s [%message (result : Infer.Env.t)];
@@ -89,7 +95,8 @@ let%expect_test _ =
               (Intrinsic Int))))))
         (e ((quantifiers ()) (ty (Intrinsic Int))))
         (l ((quantifiers ()) (ty (Apply list ((Intrinsic Int))))))
-        (ll ((quantifiers ()) (ty (Apply list ((Intrinsic Int))))))
+        (m ((quantifiers ()) (ty (Apply list ((Intrinsic Int))))))
+        (n ((quantifiers ()) (ty (Intrinsic Int))))
         (x ((quantifiers ()) (ty (Apply option ((Intrinsic Int))))))
         (y (
           (quantifiers (7))

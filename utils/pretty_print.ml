@@ -145,6 +145,25 @@ let pp_const formatter (const : Expression.Const.t) =
   | String s -> Format.pp_print_string formatter s
 ;;
 
+let rec pp_pattern formatter (pattern : Pattern.t) =
+  match pattern with
+  | Var ident -> pp_ident formatter ident
+  | Construct (constructor, None) ->
+    Format.pp_print_string formatter (Constructor.to_string constructor)
+  | Construct (constructor, Some pattern) ->
+    Format.pp_print_string formatter (Constructor.to_string constructor);
+    Format.pp_print_char formatter ' ';
+    pp_pattern formatter pattern
+  | Tuple patterns ->
+    Format.pp_print_char formatter '(';
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+      pp_pattern
+      formatter
+      patterns;
+    Format.pp_print_char formatter ')'
+;;
+
 let rec pp_expr formatter (expr : Expression.t) =
   match expr with
   | Var ident -> pp_ident formatter ident
@@ -203,6 +222,22 @@ let rec pp_expr formatter (expr : Expression.t) =
       formatter
       fields;
     Format.pp_print_char formatter '}'
+  | Match { scrutinee; cases } ->
+    Format.pp_print_string formatter "match ";
+    pp_expr formatter scrutinee;
+    Format.pp_print_string formatter " with ";
+    Format.pp_open_vbox formatter 2;
+    Format.pp_print_cut formatter ();
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_cut formatter ())
+      (fun formatter (pattern, expr) ->
+        Format.pp_print_string formatter "| ";
+        pp_pattern formatter pattern;
+        Format.pp_print_string formatter " -> ";
+        pp_expr formatter expr)
+      formatter
+      cases;
+    Format.pp_close_box formatter ()
 ;;
 
 let pp_intrinsic formatter intrinsic =

@@ -27,6 +27,10 @@ type t =
   | Tuple of t list
   | Construct of Constructor.t * t option
   | Record of (Field_name.t * t) list (* | Sequence of t list*)
+  | Match of
+      { scrutinee : t
+      ; cases : (Pattern.t * t) list
+      }
 [@@deriving sexp_of, variants]
 
 let const_int n = Const (Int (Int.to_string n))

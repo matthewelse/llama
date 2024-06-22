@@ -36,6 +36,7 @@ open Expression
 %token LessEqual    "<="
 %token Let          "let"
 %token Lparen       "("
+%token Match        "match"
 %token Minus        "-"
 %token Nil          "nil"
 %token NotEqual     "<>"
@@ -53,6 +54,7 @@ open Expression
 %token Type         "type"
 %token Var          "var"
 %token While        "while"
+%token With         "with"
 %token Eof
 
 %nonassoc Else
@@ -180,6 +182,17 @@ let one_expression :=
   | func = ident; "("; args = separated_list(",", expression); ")"; { Apply (Var func, args) }
   | "("; ~ = expression; ")"; { expression }
   | "("; fst = expression; ","; args = separated_nonempty_list(",", expression); ")"; { Tuple (fst :: args) }
+  | "match"; scrutinee = expression; "with"; option("|"); cases = separated_nonempty_list("|", match_case); { Match { scrutinee; cases } }
+
+let match_case :=
+  | ~ = pattern; "->"; ~ = expression; { (pattern, expression) }
+
+let pattern :=
+  | constructor = constructor_name; ~ = pattern; { Pattern.Construct (constructor, Some pattern) }
+  | constructor = constructor_name; { Pattern.Construct (constructor, None) }
+  | ~ = ident; { Pattern.Var ident }
+  | "("; ~ = pattern; ")"; { pattern }
+  | "("; fst = pattern; ","; args = separated_nonempty_list(",", pattern); ")"; { Pattern.Tuple (fst :: args) }
 
 let expr_record_field :=
   | ~ = field_id; "="; ~ = expression; <>

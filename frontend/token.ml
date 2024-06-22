@@ -31,6 +31,7 @@ type token =
   | LessEqual
   | Let
   | Lparen
+  | Match
   | Minus
   | Nil
   | NotEqual
@@ -48,5 +49,6 @@ type token =
   | Type
   | Var
   | While
+  | With
   | Eof
 [@@deriving sexp_of]

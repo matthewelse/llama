@@ -76,6 +76,76 @@ end
 
 let debug = false
 
+let rec type_of_pattern (pattern : Pattern.t) (env : Env.t)
+  : (Type.t Type.Var.Map.t * Env.t * Type.t) Or_error.t
+  =
+  let open Or_error.Let_syntax in
+  if debug then eprint_s [%message "type_of_pattern" (pattern : Pattern.t) (env : Env.t)];
+  let result =
+    match pattern with
+    | Var name ->
+      let typ = Type.Var (Type.Var.create ()) in
+      Ok
+        ( Type.Var.Map.empty
+        , Env.with_var env name { ty = typ; quantifiers = Type.Var.Set.empty }
+        , typ )
+    | Tuple patterns ->
+      let%bind subst, env, types =
+        List.fold
+          patterns
+          ~init:(Ok (Type.Var.Map.empty, env, []))
+          ~f:(fun acc pattern ->
+            let%bind.Or_error subst, env, acc = acc in
+            let%bind.Or_error subst', env, typ = type_of_pattern pattern env in
+            let subst = Map.merge_skewed subst subst' ~combine:(fun ~key:_ _ t2 -> t2) in
+            Ok (subst, env, typ :: acc))
+      in
+      Ok (subst, env, Type.Tuple (List.rev types))
+    | Construct (constructor, args) ->
+      let%bind type_name = Env.constructor env constructor in
+      let constructors, type_args =
+        let%tydi { shape; args } = Map.find_exn env.type_declarations type_name in
+        match shape with
+        | Variant { constructors; _ } -> constructors, args
+        | _ ->
+          (* This should be an internal compiler error *)
+          assert false
+      in
+      let expected_args =
+        List.Assoc.find_exn constructors constructor ~equal:Constructor.equal
+      in
+      let type_args = List.map type_args ~f:(fun _ -> Type.Var (Type.Var.create ())) in
+      let%bind subst, env =
+        match args, expected_args with
+        | None, None -> Ok (Type.Var.Map.empty, env)
+        | Some args, Some expected_args ->
+          let%bind subst, env, arg_type = type_of_pattern args env in
+          let subst =
+            Type.unify' arg_type expected_args ~tyenv:env.type_declarations ~acc:subst
+          in
+          Ok (subst, env)
+        | None, Some _ | Some _, None ->
+          Or_error.error_string "Invalid number of arguments"
+      in
+      Ok
+        ( subst
+        , env
+        , Type.Apply
+            ( type_name
+            , List.map type_args ~f:(fun type_arg ->
+                Type.subst type_arg ~replacements:subst) ) )
+  in
+  if debug
+  then
+    eprint_s
+      [%message
+        "type_of_pattern"
+          (pattern : Pattern.t)
+          (result : (Type.t Type.Var.Map.t * Env.t * Type.t) Or_error.t)
+          (env : Env.t)];
+  result
+;;
+
 let rec type_of (expr : Expression.t) (env : Env.t)
   : (Type.t Type.Var.Map.t * Type.t) Or_error.t
   =
@@ -229,6 +299,39 @@ let rec type_of (expr : Expression.t) (env : Env.t)
               ~acc:s)
       in
       let result_type = Type.Apply (type_name, type_args) |> Type.subst ~replacements:s in
+      Ok (s, result_type)
+    | Match { scrutinee; cases } ->
+      (* FIXME melse: this doesn't work-- we're not substituting enough type variables to give the right result
+         type.
+
+         I think I should:
+
+         1. Write more tests for unification and the rest of the type checking.
+         2. Try and rely less on manually unifying things, and more on helper functions like
+         [require_same_type : Expression.t -> Expression.t -> Type.t Or_error.t] (probably with an env and
+         a subst)
+      *)
+      let%bind s, scrutinee_type = type_of scrutinee env in
+      let%bind s, body_types =
+        List.fold_result cases ~init:(s, []) ~f:(fun (subst, acc) (pattern, body) ->
+          let%bind s, env, pattern_type = type_of_pattern pattern env in
+          let s =
+            Type.unify' scrutinee_type pattern_type ~tyenv:env.type_declarations ~acc:s
+          in
+          let subst = Map.merge_skewed s subst ~combine:(fun ~key:_ _ t2 -> t2) in
+          let%bind s, body_type = type_of body env in
+          Ok (Map.merge_skewed s subst ~combine:(fun ~key:_ _ t2 -> t2), body_type :: acc))
+      in
+      let body_types = List.rev body_types in
+      let s, _ =
+        List.fold body_types ~init:(s, None) ~f:(fun acc body ->
+          match acc with
+          | s, None -> s, Some body
+          | s, Some previous_body ->
+            let s = Type.unify' previous_body body ~tyenv:env.type_declarations ~acc:s in
+            s, Some body)
+      in
+      let result_type = Type.subst (List.last_exn body_types) ~replacements:s in
       Ok (s, result_type)
   in
   if debug

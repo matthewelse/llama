@@ -3,3 +3,4 @@ module Errors = Errors
 module Expression = Expression
 module Lexer = Lexer
 module Parser = Parser
+module Pattern = Pattern
