@@ -79,7 +79,6 @@ let repl =
         let env = ref Llama_typing.Infer.Env.empty in
         while
           let code = LNoise.linenoise "llama> " in
-          (* FIXME melse: can we handle EOF? *)
           match code with
           | Some ".exit" -> false
           | Some code ->
