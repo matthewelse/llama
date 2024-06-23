@@ -53,11 +53,11 @@ let compile =
                 ~dump_ast
             with
             | Ok ast ->
-              (match Llama_typing.Infer.type_ast ast with
+              (match Llama_typing.Infer.type_ast ast ~env:Llama_typing.Env.empty with
                | Ok env ->
                  if dump_type_env
                  then (
-                   print_s [%message (env : Llama_typing.Infer.Env.t)];
+                   print_s [%message (env : Llama_typing.Env.t)];
                    printf "%!")
                | Error error ->
                  Core.eprint_s [%message "Error while type checking" (error : Error.t)]);
@@ -76,7 +76,7 @@ let repl =
         flag "dump-types" no_arg ~doc:"Dump the type environment after type-checking."
       in
       fun () ->
-        let env = ref Llama_typing.Infer.Env.empty in
+        let env = ref Llama_typing.Env.empty in
         while
           let code = LNoise.linenoise "llama> " in
           match code with
@@ -93,7 +93,7 @@ let repl =
                 | Ok env' ->
                   env := env';
                   if dump_type_env
-                  then Core.print_s [%message (!env : Llama_typing.Infer.Env.t)]
+                  then Core.print_s [%message (!env : Llama_typing.Env.t)]
                 | Error error ->
                   Core.eprint_s [%message "Error while type checking" (error : Error.t)])
              | Error _ -> ());
