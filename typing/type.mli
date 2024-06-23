@@ -26,7 +26,6 @@ type 'var t_generic =
 type t = Var.t t_generic [@@deriving sexp_of]
 
 val of_ast : Ast.Type.t -> var_mapping:Var.t String.Map.t -> t
-val occurs : t -> var:Var.t -> bool
 
 module Poly : sig
   type ty := t
@@ -74,16 +73,7 @@ module Constructor : sig
   [@@deriving sexp_of]
 end
 
-(** [unify t t'] raises if [t] is a type variable that occurs in [t']. *)
-val unify : t -> t -> tyenv:Constructor.t Type_name.Map.t -> t Var.Map.t
-
-val unify'
-  :  t
-  -> t
-  -> tyenv:Constructor.t Type_name.Map.t
-  -> acc:t Var.Map.t
-  -> t Var.Map.t
-
+val occurs : t -> var:Var.t -> bool
 val free_type_vars : t -> Var.Set.t
 
 (** [const name] is a type with no type parameters. *)
@@ -92,7 +82,3 @@ val const : Type_name.t -> t
 val intrinsic : Intrinsic.Type.t -> t
 val generalize : t -> env:Poly.t Ident.Map.t -> Poly.t
 val subst : t -> replacements:t Var.Map.t -> t
-
-module For_testing : sig
-  val occurs : t -> var:Var.t -> bool
-end

@@ -47,6 +47,7 @@ open Expression
 %token Rbracket     "]"
 %token Rparen       ")"
 %token Semicolon    ";"
+%token DoubleSemicolon ";;"
 %token Slash        "/"
 %token Star         "*"
 %token Then         "then"
@@ -82,7 +83,7 @@ let structure_item :=
 (* Global variable declarations *)
 
 let let_binding ==
-  | "let" ; name = ident; "="; value = expression; { {Let_binding.name; value } }
+  | "let" ; name = ident; "="; value = expression; option(";;"); { {Let_binding.name; value } }
 
 (* Function declarations *)
 
@@ -176,7 +177,7 @@ let one_expression :=
   | "while"; cond = expression; "do"; body = expression; { While { cond; body } }
   | "for"; ~ = ident; ":="; lo = expression; "to"; hi = expression; "do"; body = expression; { For { ident; lo; hi; body } }
   | "break"; { Break } *)
-  (* | "let"; ~ = declarations; "in"; exps = separated_list(";", expression); "end"; { Let { declarations; exps } } *)
+  | "let"; name = ident; "="; value = expression; "in"; in_ = expression; { Let { name; value; in_ } }
   | constructor = constructor_name; ~ = expression; { Construct (constructor, Some expression) }
   | constructor = constructor_name; { Construct (constructor, None) }
   | func = ident; "("; args = separated_list(",", expression); ")"; { Apply (Var func, args) }

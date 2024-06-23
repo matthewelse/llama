@@ -26,6 +26,7 @@ rule read =
   | "->"     { Arrow }
   | ":="     { Assign }
   | ':'      { Colon }
+  | ";;"     { DoubleSemicolon }
   | ';'      { Semicolon }
   | '.'      { Dot }
   | '-'      { Minus }

@@ -35,10 +35,12 @@ let%expect_test "option" =
     type 'a option = | None | Some of 'a
 
     let x = None
+    ;;
+
     let y = Some 1
+    ;;
     |};
-  [%expect
-    {|
+  [%expect {|
     (result (
       Ok (
         (values (
@@ -61,8 +63,13 @@ let%expect_test "list" =
     type 'a list = | Nil | Cons of 'a * 'a list
 
     let x = Nil
+    ;;
+
     let y = Cons (3, Nil)
+    ;;
+
     let z = Cons (2, y)
+    ;;
     |};
   [%expect
     {|
@@ -94,6 +101,7 @@ let%expect_test "list and options" =
     type 'a option = | None | Some of 'a
 
     let x = Cons (3, Nil)
+    ;;
 
     let hd =
       match x with
@@ -124,5 +132,85 @@ let%expect_test "list and options" =
           (None option)
           (Some option)))
         (fields ()))))
+    |}]
+;;
+
+let%expect_test "tuple" =
+  test_fragment
+    {|
+    type a = | A
+    type b = | B
+    type c = | C
+
+    let x = (A, B, C)
+    |};
+  [%expect
+    {|
+    (result (
+      Ok (
+        (values ((
+          x (
+            (quantifiers ())
+            (ty (
+              Tuple (
+                (Apply a ())
+                (Apply b ())
+                (Apply c ()))))))))
+        (type_declarations (
+          (a ((shape (Variant (constructors ((A ()))) (id 0))) (args ())))
+          (b ((shape (Variant (constructors ((B ()))) (id 1))) (args ())))
+          (c ((shape (Variant (constructors ((C ()))) (id 2))) (args ())))))
+        (constructors (
+          (A a)
+          (B b)
+          (C c)))
+        (fields ()))))
+    |}]
+;;
+
+let%expect_test "variables" =
+  test_fragment {|
+    let x = 3
+    let y = x
+    |};
+  [%expect
+    {|
+    (result (
+      Ok (
+        (values (
+          (x ((quantifiers ()) (ty (Intrinsic Int))))
+          (y ((quantifiers ()) (ty (Intrinsic Int))))))
+        (type_declarations ())
+        (constructors      ())
+        (fields            ()))))
+    |}]
+;;
+
+let%expect_test "let _ = _ in _" =
+  test_fragment
+    {|
+  type int = "%int"
+  intrinsic add_int : int -> int -> int = "%add_int"
+
+  let y =
+    let z = 10 in
+    add_int (z, z)
+  |};
+  [%expect
+    {|
+    (result (
+      Ok (
+        (values (
+          (add_int (
+            (quantifiers ())
+            (ty (
+              Fun
+              ((Intrinsic Int)
+               (Intrinsic Int))
+              (Intrinsic Int)))))
+          (y ((quantifiers ()) (ty (Intrinsic Int))))))
+        (type_declarations ((int ((shape (Alias (Intrinsic Int))) (args ())))))
+        (constructors ())
+        (fields       ()))))
     |}]
 ;;

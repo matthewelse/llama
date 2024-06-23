@@ -128,7 +128,7 @@ let%expect_test "option" =
     {|
     type 'a option = | None | Some of 'a
 
-    let x = None
+    let x = None;;
     let y = Some 1
     |};
   [%expect
@@ -160,8 +160,13 @@ let%expect_test "list" =
     type 'a list = | Nil | Cons of 'a * 'a list
 
     let x = Nil
+    ;;
+
     let y = Cons (3, Nil)
+    ;;
+
     let z = Cons (2, y)
+    ;;
     |};
   [%expect
     {|
@@ -201,11 +206,13 @@ let%expect_test "list and options" =
     type 'a option = | None | Some of 'a
 
     let x = Cons (3, Nil)
+    ;;
 
     let hd =
       match x with
       | Cons (x, _) -> Some x
       | Nil -> None
+    ;;
     |};
   [%expect
     {|

@@ -15,6 +15,7 @@ type token =
   | Comma
   | Do
   | Dot
+  | DoubleSemicolon
   | Else
   | End
   | Equal
