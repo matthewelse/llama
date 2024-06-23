@@ -1,2 +1,3 @@
-module Infer = Infer
+module Constraints = Constraints
+module Env = Env
 module Type = Type

@@ -1,6 +1,13 @@
 (library
  (name llama_driver)
- (libraries async core diagnostics file_path linenoise llama_frontend llama_utils)
+ (libraries
+  async
+  core
+  diagnostics
+  file_path
+  linenoise
+  llama_frontend
+  llama_utils)
  (preprocess
   (pps ppx_jane))
  ;;

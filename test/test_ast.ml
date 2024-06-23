@@ -61,10 +61,11 @@ let%expect_test "experiment" =
     type 'a option = | None | Some of 'a
     let x = None
     let x = Some (10)
-    |}];
-  let results = Infer.type_ast ast |> ok_exn in
-  print_s [%message (results : Infer.Env.t)];
-  [%expect
+    |}]
+;;
+(* let results = Infer.type_ast ast |> ok_exn in
+   print_s [%message (results : Infer.Env.t)];
+   [%expect
     {|
     (results (
       (values (
@@ -87,5 +88,4 @@ let%expect_test "experiment" =
         (Some option)
         (Unit unit)))
       (fields ())))
-    |}]
-;;
+    |}]*)

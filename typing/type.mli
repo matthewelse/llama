@@ -15,13 +15,15 @@ module Id : sig
   include Unique_id.Id with type t := t
 end
 
-type t =
-  | Var of Var.t
-  | Apply of Type_name.t * t list
-  | Fun of t list * t
-  | Tuple of t list
+type 'var t_generic =
+  | Var of 'var
+  | Apply of Type_name.t * 'var t_generic list
+  | Fun of 'var t_generic list * 'var t_generic
+  | Tuple of 'var t_generic list
   | Intrinsic of Intrinsic.Type.t
-[@@deriving sexp_of]
+[@@deriving variants]
+
+type t = Var.t t_generic [@@deriving sexp_of]
 
 val of_ast : Ast.Type.t -> var_mapping:Var.t String.Map.t -> t
 
@@ -34,6 +36,9 @@ module Poly : sig
     ; ty : ty
     }
   [@@deriving sexp_of]
+
+  (** [ty] with no quantifiers. *)
+  val mono : ty -> t
 
   (** [init t] returns a monomorphic type with fresh free type variables for each of the quantified
       type variables. *)
@@ -86,3 +91,7 @@ val const : Type_name.t -> t
 val intrinsic : Intrinsic.Type.t -> t
 val generalize : t -> env:Poly.t Ident.Map.t -> Poly.t
 val subst : t -> replacements:t Var.Map.t -> t
+
+module For_testing : sig
+  val occurs : t -> var:Var.t -> bool
+end

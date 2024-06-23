@@ -1,6 +1,6 @@
 (library
  (name llama_frontend)
- (libraries core llama_common )
+ (libraries core llama_common)
  (preprocess
   (pps ppx_jane)))
 

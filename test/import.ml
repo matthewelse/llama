@@ -15,7 +15,7 @@ end
 
 include struct
   open Llama_typing
-  module Infer = Infer
+  module Constraints = Constraints
   module Type = Type
 end
 

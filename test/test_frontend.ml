@@ -48,7 +48,7 @@ let parse s =
 ;;
 
 let%expect_test _ =
-  let ast = parse example0 in
+  let _ast = parse example0 in
   [%expect
     {|
     type int = "%int"
@@ -70,10 +70,11 @@ let%expect_test _ =
 
       | Nil -> 0
       | Cons (a, b) -> 10
-    |}];
-  let result = Infer.type_ast ast |> ok_exn in
-  print_s [%message (result : Infer.Env.t)];
-  [%expect
+    |}]
+;;
+(* let result = Infer.type_ast ast |> ok_exn in
+   print_s [%message (result : Infer.Env.t)];
+   [%expect
     {|
     (result (
       (values (
@@ -136,5 +137,4 @@ let%expect_test _ =
         (b t)
         (c t)
         (d t2)))))
-    |}]
-;;
+    |}]*)

@@ -3,40 +3,36 @@ open! Import
 module Var = Unique_id.Int ()
 module Id = Unique_id.Int ()
 
-type t =
-  | Var of Var.t
-  | Apply of Type_name.t * t list
-  | Fun of t list * t
-  | Tuple of t list
+type 'var t_generic =
+  | Var of 'var
+  | Apply of Type_name.t * 'var t_generic list
+  | Fun of 'var t_generic list * 'var t_generic
+  | Tuple of 'var t_generic list
   | Intrinsic of Intrinsic.Type.t
-[@@deriving sexp_of]
+[@@deriving fold, iter, sexp_of, variants]
+
+type t = Var.t t_generic [@@deriving sexp_of]
+
+let fold_free_type_vars t ~init ~f = fold_t_generic f init t
+let iter_free_type_vars t ~f = iter_t_generic f t
+
+let exists_free_type_var t ~f =
+  let exception Found in
+  try
+    iter_free_type_vars t ~f:(fun v -> if f v then raise Found);
+    false
+  with
+  | Found -> true
+;;
 
 let const t = Apply (t, [])
 let intrinsic i = Intrinsic i
 
-let rec free_type_vars t =
-  match t with
-  | Var v -> Var.Set.singleton v
-  | Apply (_, ts) ->
-    List.fold ts ~init:Var.Set.empty ~f:(fun acc t -> Set.union acc (free_type_vars t))
-  | Fun (args, r) ->
-    Set.union
-      (List.fold args ~init:Var.Set.empty ~f:(fun acc l ->
-         Set.union acc (free_type_vars l)))
-      (free_type_vars r)
-  | Tuple ts ->
-    List.fold ts ~init:Var.Set.empty ~f:(fun acc t -> Set.union acc (free_type_vars t))
-  | Intrinsic _ -> Var.Set.empty
+let free_type_vars t =
+  fold_free_type_vars t ~init:Var.Set.empty ~f:(fun acc v -> Set.add acc v)
 ;;
 
-let rec occurs t ~var =
-  match t with
-  | Var var' -> Var.equal var var'
-  | Apply (_, ts) -> List.exists ts ~f:(fun t -> occurs t ~var)
-  | Fun (args, res) -> List.exists args ~f:(occurs ~var) || occurs res ~var
-  | Tuple ts -> List.exists ts ~f:(fun t -> occurs t ~var)
-  | Intrinsic _ -> false
-;;
+let occurs t ~var = exists_free_type_var t ~f:(Var.equal var)
 
 let rec subst t ~replacements =
   match t with
@@ -53,10 +49,10 @@ let rec subst t ~replacements =
 let rec of_ast (t : Ast.Type.t) ~var_mapping =
   match t with
   | Var v -> Var (Map.find_exn var_mapping v)
-  | Intrinsic i -> Intrinsic i
   | Apply (name, ts) -> Apply (name, List.map ts ~f:(of_ast ~var_mapping))
   | Fun (args, r) -> Fun (List.map args ~f:(of_ast ~var_mapping), of_ast r ~var_mapping)
   | Tuple ts -> Tuple (List.map ts ~f:(of_ast ~var_mapping))
+  | Intrinsic i -> Intrinsic i
 ;;
 
 module Poly = struct
@@ -69,6 +65,7 @@ module Poly = struct
   [@@deriving sexp_of]
 
   let ty_subst = subst
+  let mono ty = { ty; quantifiers = Var.Set.empty }
 
   let subst t ~(replacements : ty Var.Map.t) =
     assert (
@@ -205,3 +202,7 @@ let rec unify' t1 t2 ~tyenv ~acc : t Var.Map.t =
 ;;
 
 let unify t1 t2 ~tyenv = unify' t1 t2 ~tyenv ~acc:Var.Map.empty
+
+module For_testing = struct
+  let occurs = occurs
+end
