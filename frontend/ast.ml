@@ -20,6 +20,23 @@ module Type = struct
     [@@deriving sexp_of]
   end
 
+  let rec free_type_vars t ~acc =
+    match t with
+    | Var v -> v :: acc
+    | Intrinsic _ -> acc
+    | Apply (_, args) ->
+      List.fold args ~init:acc ~f:(fun acc next -> free_type_vars next ~acc)
+    | Fun (args, r) ->
+      let acc = List.fold args ~init:acc ~f:(fun acc next -> free_type_vars next ~acc) in
+      free_type_vars r ~acc
+    | Tuple ts -> List.fold ts ~init:acc ~f:(fun acc next -> free_type_vars next ~acc)
+  ;;
+
+  let generalize t : Poly.t =
+    let quantifiers = free_type_vars t ~acc:[] in
+    { ty = t; quantifiers }
+  ;;
+
   let const name = Apply (name, [])
 end
 

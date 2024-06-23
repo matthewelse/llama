@@ -32,3 +32,4 @@ type t =
 
 val const_int : int -> t
 val const_string : string -> t
+val is_syntactic_value : t -> bool

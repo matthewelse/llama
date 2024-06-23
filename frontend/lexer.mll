@@ -58,7 +58,7 @@ rule read =
   | "of"     { Of }
   | "var"    { Var }
   | "nil"    { Nil }
-  | "function" { Function }
+  | "fun"    { Fun }
   | "for"    { For }
   | "to"     { To }
   | "while"  { While }

@@ -24,7 +24,7 @@ open Expression
 %token End          "end"
 %token Equal        "="
 %token For          "for"
-%token Function     "function"
+%token Fun          "fun"
 %token Greater      ">"
 %token GreaterEqual ">="
 %token If           "if"
@@ -85,8 +85,6 @@ let structure_item :=
 let let_binding ==
   | "let" ; name = ident; "="; value = expression; option(";;"); { {Let_binding.name; value } }
 
-(* Function declarations *)
-
 (* Type declarations *)
 
 let type_vars ==
@@ -128,7 +126,7 @@ let record_field :=
 
 let intrinsic_declaration :=
   | "intrinsic"; name = ident; ":"; ~ = type_; "="; intrinsic_name = String; {
-    { Value_intrinsic.name; intrinsic = Intrinsic.Value.of_string intrinsic_name; type_ = { quantifiers = []; ty = type_ } }
+    { Value_intrinsic.name; intrinsic = Intrinsic.Value.of_string intrinsic_name; type_ = Type.generalize type_ }
   }
 
 let base_type :=
@@ -148,7 +146,7 @@ let inter_type :=
 let type_ :=
   | ~ = inter_type; "->"; ~ = type_; {
     match (type_ : Type.t) with
-    | Fun (args, ret) -> Type.Fun (args @ [ inter_type ], ret)
+    | Fun (args, ret) -> Type.Fun (inter_type :: args, ret)
     | _ -> Type.Fun([ inter_type ], type_)
   }
   | ~ = inter_type; { inter_type }
@@ -184,6 +182,7 @@ let one_expression :=
   | "("; ~ = expression; ")"; { expression }
   | "("; fst = expression; ","; args = separated_nonempty_list(",", expression); ")"; { Tuple (fst :: args) }
   | "match"; scrutinee = expression; "with"; option("|"); cases = separated_nonempty_list("|", match_case); { Match { scrutinee; cases } }
+  | "fun"; "(" ; args = separated_list(",", ident); ")"; "->"; body = expression; { Lambda (args, body) }
 
 let match_case :=
   | ~ = pattern; "->"; ~ = expression; { (pattern, expression) }

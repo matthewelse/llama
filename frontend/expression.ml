@@ -35,3 +35,17 @@ type t =
 
 let const_int n = Const (Int (Int.to_string n))
 let const_string s = Const (String s)
+
+let rec is_syntactic_value t =
+  (* see: http://mlton.org/ValueRestriction *)
+  match t with
+  | Var _ -> true
+  | Const _ -> true
+  | Lambda _ -> true
+  | Tuple ts -> List.for_all ts ~f:is_syntactic_value
+  | Record fields -> List.for_all fields ~f:(fun (_, t) -> is_syntactic_value t)
+  | Construct _ -> true
+  | Match _ -> false
+  | Let _ -> false
+  | Apply _ -> false
+;;

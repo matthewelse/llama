@@ -96,7 +96,7 @@ let%expect_test "option match" =
     |}]
 ;;
 
-let test_fragment ?(pp_ast = false) code =
+(* let test_fragment ?(pp_ast = false) code =
   Type.Var.For_testing.reset_counter ();
   Type.Id.For_testing.reset_counter ();
   let ast =
@@ -266,3 +266,60 @@ let%expect_test "list and options" =
            "check t1 t2")))))
     |}]
 ;;
+
+let%expect_test "polymorphism" =
+  test_fragment
+    {|
+      type 'a option = | None | Some of 'a
+      type 'a list = | Nil | Cons of 'a * 'a list
+
+      let hd = fun (l) ->
+        match l with
+        | Nil -> None
+        | Cons (hd, _) -> Some hd
+      ;;
+  |};
+  [%expect
+    {|
+    (result (
+      Ok (
+        ((values ((
+           hd ((quantifiers ()) (ty (Fun ((Var 2)) (Apply option ((Var 4)))))))))
+         (type_declarations (
+           (list (
+             (shape (
+               Variant
+               (constructors (
+                 (Nil ()) (Cons ((Tuple ((Var 1) (Apply list ((Var 1)))))))))
+               (id 1)))
+             (args (1))))
+           (option (
+             (shape (Variant (constructors ((None ()) (Some ((Var 0))))) (id 0)))
+             (args (0))))))
+         (constructors (
+           (Cons list)
+           (Nil  list)
+           (None option)
+           (Some option)))
+         (fields ()))
+        ((Same_type (Var 2) (Apply list ((Var 3))) "pattern (construct: no args)")
+         (Same_type
+           (Var 2)
+           (Apply list ((Var 5)))
+           "pattern (construct: some args)")
+         (Same_type
+           (Tuple ((Var 5) (Apply list ((Var 5)))))
+           (Tuple (
+             (Var 6)
+             (Var 7)))
+           "pattern (tuple)")
+         (Same_type
+           (Apply option ((Var 8)))
+           (Apply option ((Var 4)))
+           "check t1 t2")
+         (Same_type
+           (Var 6)
+           (Var 8)
+           "check t1 t2")))))
+    |}]
+;;*)

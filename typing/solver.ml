@@ -1,21 +1,44 @@
 open! Core
 open! Import
 
+let debug = false
+
 type t = { vars : Type.t Union_find.t Type.Var.Table.t }
 
 let create () = { vars = Type.Var.Table.create () }
+
+let sexp_of_t t =
+  let vars =
+    Hashtbl.to_alist t.vars
+    |> List.map ~f:(fun (var, ty) ->
+      let ty = Union_find.get ty in
+      var, ty)
+  in
+  [%sexp { vars : (Type.Var.t * Type.t) list }]
+;;
 
 let rec normalize_ty t (ty : Type.t) ~env =
   let open Result.Let_syntax in
   match ty with
   | Intrinsic _ -> Ok ty
   | Var v ->
+    if debug then print_s [%message "normalising" (v : Type.Var.t)];
     (match Hashtbl.find t.vars v with
-     | None -> Ok ty
-     | Some uf -> Ok (Union_find.get uf))
+     | None ->
+       if debug then print_s [%message "unknown"];
+       Ok ty
+     | Some uf ->
+       (match Union_find.get uf with
+        | Var v -> Ok (Var v)
+        | ty -> normalize_ty t ty ~env))
   | Apply (name, args) ->
     let%bind args = List.map args ~f:(normalize_ty t ~env) |> Result.all in
     (match%bind Env.type_declaration env name with
+     | { shape = Alias (Intrinsic _); args = _ } ->
+       (* FIXME melse: something about this abstraction feels wrong - maybe I should just
+          remove primitive from [Type.t]? *)
+       (* Treat intrinsic type aliases as opaque. *)
+       Ok ty
      | { shape = Alias ty; args = decl_args } ->
        let replacements =
          List.map2_exn decl_args args ~f:(fun decl_arg arg -> decl_arg, arg)
@@ -49,36 +72,21 @@ let rec iter2_result xs ys ~f =
   | [], _ :: _ | _ :: _, [] -> Error `Mismatched_lengths
 ;;
 
-let lookup_var t v = Hashtbl.find t.vars v
+let lookup_var t v =
+  Hashtbl.find_or_add t.vars v ~default:(fun () -> Union_find.create (Type.Var v))
+;;
 
 let unify_var_var t v1 v2 =
-  match lookup_var t v1, lookup_var t v2 with
-  | None, None ->
-    let v1' = Union_find.create (Type.Var v1) in
-    let v2' = Union_find.create (Type.Var v2) in
-    Union_find.union v1' v2';
-    Hashtbl.set t.vars ~key:v1 ~data:v1';
-    Hashtbl.set t.vars ~key:v2 ~data:v2';
-    Ok ()
-  | Some v1', None ->
-    let v2' = Union_find.create (Type.Var v2) in
-    Union_find.union v1' v2';
-    Hashtbl.set t.vars ~key:v2 ~data:v2';
-    Ok ()
-  | None, Some v2' ->
-    let v1' = Union_find.create (Type.Var v1) in
-    Union_find.union v1' v2';
-    Hashtbl.set t.vars ~key:v1 ~data:v1';
-    Ok ()
-  | Some v1', Some v2' ->
-    if Union_find.same_class v1' v2'
-    then Ok ()
-    else
-      Or_error.error_string [%string "Types not equal: %{v1#Type.Var} and %{v2#Type.Var}"]
+  let v1' = lookup_var t v1 in
+  let v2' = lookup_var t v2 in
+  assert (Type.is_var (Union_find.get v1'));
+  assert (Type.is_var (Union_find.get v2'));
+  Union_find.union v1' v2'
 ;;
 
 let rec unify_ty_ty t ty1 ty2 ~env =
   let open Result.Let_syntax in
+  if debug then print_s [%message "unify_ty_ty" (ty1 : Type.t) (ty2 : Type.t)];
   let%bind ty1 = normalize_ty t ty1 ~env in
   let%bind ty2 = normalize_ty t ty2 ~env in
   match ty1, ty2 with
@@ -120,23 +128,40 @@ let rec unify_ty_ty t ty1 ty2 ~env =
       | `Error err -> err
       | `Mismatched_lengths ->
         Error.of_string [%string "Tuple arguments had different number of members."])
-  | Var v1, Var v2 -> unify_var_var t v1 v2
+  | Var v1, Var v2 ->
+    unify_var_var t v1 v2;
+    Ok ()
   | Var v, ty | ty, Var v ->
     if Type.occurs ty ~var:v
     then
       Or_error.error_string
         [%string "Type variable %{v#Type.Var} occurs in another type."]
     else (
-      let repr = Hashtbl.find_or_add t.vars v ~default:(fun () -> Union_find.create ty) in
+      let repr = lookup_var t v in
+      if debug then print_s [%message (v : Type.Var.t) ~equals:(ty : Type.t)];
       Union_find.set repr ty;
       Ok ())
+  | Apply (type_name, _), Intrinsic intrinsic | Intrinsic intrinsic, Apply (type_name, _)
+    ->
+    let%bind decl = Env.type_declaration env type_name in
+    let%bind intrinsic' =
+      match decl.shape with
+      | Alias (Intrinsic i) -> Ok i
+      | _ ->
+        Or_error.error_string
+          [%string
+            "Failed to unify types (got %{type_name#Type_name}, expected \
+             %{intrinsic#Intrinsic.Type})"]
+    in
+    if Intrinsic.Type.equal intrinsic intrinsic'
+    then Ok ()
+    else Or_error.error_string "Failed to unify types (mismatching intrinsic types)"
   | t1, t2 ->
     Or_error.error_s [%message "Failed to unify types" (t1 : Type.t) (t2 : Type.t)]
 ;;
 
-let solve (constraints : Constraints.t) ~(env : Env.t) =
+let solve t (constraints : Constraints.t) ~(env : Env.t) =
   let open Result.Let_syntax in
-  let t = create () in
   let%bind () =
     iter_result (Constraints.to_list constraints) ~f:(function
       | Same_type (t1, t2, _note) -> unify_ty_ty t t1 t2 ~env)

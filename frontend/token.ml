@@ -20,7 +20,7 @@ type token =
   | End
   | Equal
   | For
-  | Function
+  | Fun
   | Greater
   | GreaterEqual
   | If
