@@ -26,6 +26,7 @@ type 'var t_generic =
 type t = Var.t t_generic [@@deriving sexp_of]
 
 val of_ast : Ast.Type.t -> var_mapping:Var.t String.Map.t -> t
+val occurs : t -> var:Var.t -> bool
 
 module Poly : sig
   type ty := t
