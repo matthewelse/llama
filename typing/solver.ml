@@ -22,15 +22,14 @@ let rec normalize_ty t (ty : Type.t) ~env =
   match ty with
   | Intrinsic _ -> Ok ty
   | Var v ->
-    if debug then print_s [%message "normalising" (v : Type.Var.t)];
     (match Hashtbl.find t.vars v with
-     | None ->
-       if debug then print_s [%message "unknown"];
-       Ok ty
+     | None -> Ok ty
      | Some uf ->
        (match Union_find.get uf with
         | Var v -> Ok (Var v)
-        | ty -> normalize_ty t ty ~env))
+        | ty ->
+          if debug then print_s [%message "normalising" (v : Type.Var.t) (ty : Type.t)];
+          normalize_ty t ty ~env))
   | Apply (name, args) ->
     let%bind args = List.map args ~f:(normalize_ty t ~env) |> Result.all in
     (match%bind Env.type_declaration env name with
@@ -38,7 +37,7 @@ let rec normalize_ty t (ty : Type.t) ~env =
        (* FIXME melse: something about this abstraction feels wrong - maybe I should just
           remove primitive from [Type.t]? *)
        (* Treat intrinsic type aliases as opaque. *)
-       Ok ty
+       Ok (Type.Apply (name, args))
      | { shape = Alias ty; args = decl_args } ->
        let replacements =
          List.map2_exn decl_args args ~f:(fun decl_arg arg -> decl_arg, arg)
@@ -171,6 +170,8 @@ let solve t (constraints : Constraints.t) ~(env : Env.t) =
       values =
         Map.map env.values ~f:(fun typ ->
           let ty = normalize_ty t typ.ty ~env |> Or_error.ok_exn in
+          if debug
+          then print_s [%message "final normalization" (typ : Type.Poly.t) (ty : Type.t)];
           { typ with ty })
     }
 ;;

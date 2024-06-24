@@ -1,11 +1,18 @@
 open! Core
 open! Import
 
-module Constraint = struct
-  type t = Same_type of Type.t * Type.t * string [@@deriving sexp_of]
+module Annotation = struct
+  type t =
+    | Expression_should_have_type of Expression.t * Type.t
+    | Pattern_should_have_type of Pattern.t * Type.t
+  [@@deriving sexp_of]
 end
 
-type t = Constraint.t list [@@deriving sexp_of]
+module Constraint = struct
+  type 'a t = Same_type of Type.t * Type.t * 'a [@@deriving sexp_of]
+end
+
+type t = Annotation.t list Constraint.t list [@@deriving sexp_of]
 
 let add (t : t) c = c :: t
 let singleton c : t = [ c ]
@@ -240,7 +247,10 @@ and check (expr : Expression.t) (expected_ty : Type.t) ~env : (t, _) result =
     check body result ~env
   | other, expected_ty ->
     let%bind ty, constraints = infer other ~env in
-    Ok (add constraints (Same_type (ty, expected_ty, "check t1 t2")))
+    Ok
+      (add
+         constraints
+         (Same_type (ty, expected_ty, [ Expression_should_have_type (expr, expected_ty) ])))
 
 and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result =
   let open Result.Let_syntax in
@@ -275,7 +285,9 @@ and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result
        Ok
          ( singleton
              (Same_type
-                (expected_ty, Apply (type_name, type_args), "pattern (construct: no args)"))
+                ( expected_ty
+                , Apply (type_name, type_args)
+                , [ Pattern_should_have_type (pattern, expected_ty) ] ))
          , env )
      | Some arg_type, Some arg_pattern ->
        let arg_type = Type.subst arg_type ~replacements:type_arg_mapping in
@@ -286,7 +298,7 @@ and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result
              (Same_type
                 ( expected_ty
                 , Apply (type_name, type_args)
-                , "pattern (construct: some args)" ))
+                , [ Pattern_should_have_type (pattern, expected_ty) ] ))
          , env )
      | Some _, None ->
        (* FIXME: this should produce an error that points to the (argument-less) pattern, with an info
@@ -318,7 +330,7 @@ and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result
           (Same_type
              ( expected_ty
              , Tuple (List.map type_vars ~f:(fun (_, type_var) : Type.t -> Var type_var))
-             , "pattern (tuple)" ))
+             , [ Pattern_should_have_type (pattern, expected_ty) ] ))
       , env )
 ;;
 

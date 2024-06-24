@@ -25,23 +25,26 @@ end
 
 module Type = struct
   type t =
+    | Bool
     | Int
-    | String
     | Ref
+    | String
   [@@deriving enumerate, equal, variants, sexp_of]
 
   let to_string t =
     match t with
+    | Bool -> "%bool"
     | Int -> "%int"
-    | String -> "%string"
     | Ref -> "%ref"
+    | String -> "%string"
   ;;
 
   let of_string s =
     match s with
+    | "%bool" -> Bool
     | "%int" -> Int
-    | "%string" -> String
     | "%ref" -> Ref
+    | "%string" -> String
     | _ -> failwith [%string "Invalid type intrinsic %{s}"]
   ;;
 end

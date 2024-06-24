@@ -108,7 +108,8 @@ let%expect_test "list and options" =
       | Cons (x, _) -> Some x
       | Nil -> None
     |};
-  [%expect {|
+  [%expect
+    {|
     (result (
       Ok (
         (values (
@@ -279,7 +280,8 @@ let%expect_test "polymorphism" =
       let a = hd (z)
       ;;
   |};
-  [%expect {|
+  [%expect
+    {|
     (result (
       Ok (
         (values (
@@ -324,8 +326,11 @@ let%expect_test "value restriction" =
   intrinsic set_ref : 'a ref -> 'a -> unit = "%set_ref"
 
   let x = make_ref (None)
+
+  let y = set_ref (x, (Some 1))
+  let z = set_ref (x, (Some None))
   |};
-  [%expect {| (result (Error "Value restriction")) |}]
+  [%expect {| (result (Error "Failed to unify types (got option, expected %int)")) |}]
 ;;
 
 let%expect_test "don't allow a ref to be set to two different types" =
@@ -346,6 +351,5 @@ let%expect_test "don't allow a ref to be set to two different types" =
     Unit
   ;;
   |};
-  [%expect
-    {| (result (Error "Failed to unify types (got option, expected %int)")) |}]
+  [%expect {| (result (Error "Failed to unify types (got option, expected %int)")) |}]
 ;;

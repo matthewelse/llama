@@ -2,10 +2,9 @@ open! Core
 open! Import
 
 let maybe_generalize_expression_type expr ty ~(env : Env.t) =
-  let ptype = Type.generalize ty ~env:env.values in
-  if Expression.is_syntactic_value expr || Set.is_empty ptype.quantifiers
-  then Ok ptype
-  else Or_error.error_string "Value restriction"
+  if Expression.is_syntactic_value expr
+  then Type.generalize ty ~env:env.values
+  else Type.Poly.mono ty
 ;;
 
 let type_of_let_binding expr env =
@@ -29,7 +28,7 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
       let%bind env = Solver.solve solver constraints ~env in
       if debug then print_s [%message (solver : Solver.t)];
       let%bind ty = Solver.normalize_ty solver ty ~env in
-      let%bind ty = maybe_generalize_expression_type value ty ~env in
+      let ty = maybe_generalize_expression_type value ty ~env in
       if debug then print_s [%message (ty : Type.Poly.t)];
       let env = Env.with_var env name ty in
       if debug then print_s [%message (env : Env.t)];

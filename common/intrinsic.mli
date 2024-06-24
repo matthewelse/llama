@@ -14,9 +14,10 @@ end
 
 module Type : sig
   type t =
+    | Bool
     | Int
-    | String
     | Ref
+    | String
   [@@deriving enumerate, equal, variants, sexp_of]
 
   include Stringable.S with type t := t
