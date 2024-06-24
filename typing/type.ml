@@ -5,7 +5,7 @@ module Id = Unique_id.Int ()
 
 type 'var t_generic =
   | Var of 'var
-  | Apply of Type_name.t * 'var t_generic list
+  | Apply of Type_name.t Located.t * 'var t_generic list
   | Fun of 'var t_generic list * 'var t_generic
   | Tuple of 'var t_generic list
   | Intrinsic of Intrinsic.Type.t
@@ -47,7 +47,7 @@ let rec subst t ~replacements =
 ;;
 
 let rec of_ast (t : Ast.Type.t) ~var_mapping =
-  match t with
+  match t.desc with
   | Var v -> Var (Map.find_exn var_mapping v)
   | Apply (name, ts) -> Apply (name, List.map ts ~f:(of_ast ~var_mapping))
   | Fun (args, r) -> Fun (List.map args ~f:(of_ast ~var_mapping), of_ast r ~var_mapping)
@@ -111,11 +111,11 @@ module Constructor = struct
     type t =
       | Alias of ty
       | Record of
-          { fields : (Field_name.t * ty) list
+          { fields : (Field_name.t Located.t * ty) list
           ; id : Id.t
           }
       | Variant of
-          { constructors : (Constructor.t * ty option) list
+          { constructors : (Constructor.t Located.t * ty option) list
           ; id : Id.t
           }
     [@@deriving sexp_of]

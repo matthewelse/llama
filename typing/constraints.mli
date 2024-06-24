@@ -17,8 +17,8 @@ type t [@@deriving sexp_of]
 val empty : t
 val merge : t -> t -> t
 val to_list : t -> Annotation.t list Constraint.t list
-val infer : Expression.t -> env:Env.t -> (Type.t * t) Or_error.t
+val infer : Expression.t -> env:Env.t -> (Type.t * t, Type_error.t) result
 
 module For_testing : sig
-  val check_pattern : Pattern.t -> Type.t -> env:Env.t -> (t * Env.t) Or_error.t
+  val check_pattern : Pattern.t -> Type.t -> env:Env.t -> (t * Env.t, Type_error.t) result
 end

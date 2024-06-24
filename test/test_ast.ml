@@ -4,50 +4,70 @@ open! Import
 let%expect_test "experiment" =
   Type.Id.For_testing.reset_counter ();
   Type.Var.For_testing.reset_counter ();
-  let ty_int = Type_name.of_string "int" in
+  let tn_int = Located.dummy (Type_name.of_string "int") in
+  let ty_int : Ast.Type.t = { desc = Apply (tn_int, []); loc = Span.dummy } in
   let ast : Ast.t =
     [ Type_declaration
-        { name = ty_int; type_params = []; type_shape = Alias (Intrinsic Int) }
+        { name = tn_int
+        ; type_params = []
+        ; type_shape = Alias { desc = Intrinsic Int; loc = Span.dummy }
+        }
     ; Intrinsic
         { name = Ident.of_string "add"
         ; intrinsic = Add_int
         ; type_ =
             { quantifiers = []
-            ; ty =
-                Fun
-                  ([ Ast.Type.const ty_int; Ast.Type.const ty_int ], Ast.Type.const ty_int)
+            ; ty = { desc = Fun ([ ty_int; ty_int ], ty_int); loc = Span.dummy }
             }
         }
     ; Let
         { name = Ident.of_string "x"
         ; value =
-            Apply
-              ( Var (Ident.of_string "add")
-              , [ Expression.const_int 10; Expression.const_int 50 ] )
+            { desc =
+                Apply
+                  ( { desc = Var (Ident.of_string "add"); loc = Span.dummy }
+                  , Located.dummy
+                      [ Expression.const_int ~loc:Span.dummy 10
+                      ; Expression.const_int ~loc:Span.dummy 50
+                      ] )
+            ; loc = Span.dummy
+            }
         }
     ; Type_declaration
-        { name = Type_name.of_string "unit"
+        { name = Located.dummy (Type_name.of_string "unit")
         ; type_params = []
-        ; type_shape = Variant { constructors = [ Constructor.of_string "Unit", None ] }
+        ; type_shape =
+            Variant
+              { constructors = [ Located.dummy (Constructor.of_string "Unit"), None ] }
         }
     ; Type_declaration
-        { name = Type_name.of_string "option"
-        ; type_params = [ "'a" ]
+        { name = Located.dummy (Type_name.of_string "option")
+        ; type_params = [ Located.dummy "'a" ]
         ; type_shape =
             Variant
               { constructors =
-                  [ Constructor.of_string "None", None
-                  ; Constructor.of_string "Some", Some (Var "'a")
+                  [ Located.dummy (Constructor.of_string "None"), None
+                  ; ( Located.dummy (Constructor.of_string "Some")
+                    , Some { desc = Var "'a"; loc = Span.dummy } )
                   ]
               }
         }
     ; Let
         { name = Ident.of_string "x"
-        ; value = Construct (Constructor.of_string "None", None)
+        ; value =
+            { desc = Construct (Located.dummy (Constructor.of_string "None"), None)
+            ; loc = Span.dummy
+            }
         }
     ; Let
         { name = Ident.of_string "x"
-        ; value = Construct (Constructor.of_string "Some", Some (Expression.const_int 10))
+        ; value =
+            { desc =
+                Construct
+                  ( Located.dummy (Constructor.of_string "Some")
+                  , Some (Expression.const_int 10 ~loc:Span.dummy) )
+            ; loc = Span.dummy
+            }
         }
     ]
   in

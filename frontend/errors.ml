@@ -50,8 +50,6 @@ let message =
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 92 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 90 ->
-        "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 89 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 63 ->

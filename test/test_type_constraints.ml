@@ -3,12 +3,17 @@ open! Import
 module Env = Llama_typing.Env
 
 let test_pattern pattern typ ~env =
-  let constraints, _ = Constraints.For_testing.check_pattern pattern typ ~env |> ok_exn in
+  let constraints, _ =
+    Constraints.For_testing.check_pattern pattern typ ~env |> Type_error.ok_exn
+  in
   print_s [%message (constraints : Constraints.t)]
 ;;
 
 let test_match scrutinee cases ~env =
-  let _, constraints = Constraints.infer (Match { scrutinee; cases }) ~env |> ok_exn in
+  let _, constraints =
+    Constraints.infer { desc = Match { scrutinee; cases }; loc = Span.dummy } ~env
+    |> Type_error.ok_exn
+  in
   print_s [%message (constraints : Constraints.t)]
 ;;
 
@@ -19,15 +24,17 @@ let%expect_test "option pattern" =
     Env.with_type_declaration
       (Env.with_constructors
          Env.empty
-         [ Constructor.of_string "Some", () ]
-         ~type_name:(Type_name.of_string "option"))
+         [ { value = Constructor.of_string "Some"; loc = Span.dummy }, () ]
+         ~type_name:(Type_name.of_string "option")
+       |> Type_error.ok_exn)
       (Type_name.of_string "option")
       (let arg = Type.Var.create () in
        { shape =
            Variant
              { constructors =
-                 [ Constructor.of_string "None", None
-                 ; Constructor.of_string "Some", Some (Var arg)
+                 [ { value = Constructor.of_string "None"; loc = Span.dummy }, None
+                 ; ( { value = Constructor.of_string "Some"; loc = Span.dummy }
+                   , Some (Var arg) )
                  ]
              ; id = Type.Id.create ()
              }
@@ -37,7 +44,9 @@ let%expect_test "option pattern" =
   let v = Type.Var.create () in
   print_s [%message "variable we care about:" (v : Type.Var.t)];
   test_pattern
-    (Construct (Constructor.of_string "Some", Some (Var (Ident.of_string "x"))))
+    (Construct
+       ( Located.dummy (Constructor.of_string "Some")
+       , Some (Var (Located.dummy (Ident.of_string "x"))) ))
     (Type.Var v)
     ~env;
   [%expect
@@ -57,15 +66,17 @@ let%expect_test "option match" =
       (Env.with_type_declaration
          (Env.with_constructors
             Env.empty
-            [ Constructor.of_string "Some", () ]
-            ~type_name:(Type_name.of_string "option"))
+            [ { value = Constructor.of_string "Some"; loc = Span.dummy }, () ]
+            ~type_name:(Type_name.of_string "option")
+          |> Type_error.ok_exn)
          (Type_name.of_string "option")
          (let arg = Type.Var.create () in
           { shape =
               Variant
                 { constructors =
-                    [ Constructor.of_string "None", None
-                    ; Constructor.of_string "Some", Some (Var arg)
+                    [ { value = Constructor.of_string "None"; loc = Span.dummy }, None
+                    ; ( { value = Constructor.of_string "Some"; loc = Span.dummy }
+                      , Some (Var arg) )
                     ]
                 ; id = Type.Id.create ()
                 }
@@ -76,9 +87,11 @@ let%expect_test "option match" =
   in
   print_s [%message (env : Env.t)];
   test_match
-    (Var (Ident.of_string "x"))
-    [ ( Construct (Constructor.of_string "Some", Some (Var (Ident.of_string "y")))
-      , Var (Ident.of_string "y") )
+    { desc = Var (Ident.of_string "x"); loc = Span.dummy }
+    [ ( Construct
+          ( Located.dummy (Constructor.of_string "Some")
+          , Some (Var (Located.dummy (Ident.of_string "y"))) )
+      , { desc = Var (Ident.of_string "y"); loc = Span.dummy } )
     ]
     ~env;
   [%expect

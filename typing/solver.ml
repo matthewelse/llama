@@ -32,7 +32,7 @@ let rec normalize_ty t (ty : Type.t) ~env =
           normalize_ty t ty ~env))
   | Apply (name, args) ->
     let%bind args = List.map args ~f:(normalize_ty t ~env) |> Result.all in
-    (match%bind Env.type_declaration env name with
+    (match%bind Env.type_declaration env name.value ~loc:name.loc with
      | { shape = Alias (Intrinsic _); args = _ } ->
        (* FIXME melse: something about this abstraction feels wrong - maybe I should just
           remove primitive from [Type.t]? *)
@@ -85,6 +85,10 @@ let unify_var_var t v1 v2 =
 
 let rec unify_ty_ty t ty1 ty2 ~env =
   let open Result.Let_syntax in
+  let loc =
+    (* FIXME: todo *)
+    Span.dummy
+  in
   if debug then print_s [%message "unify_ty_ty" (ty1 : Type.t) (ty2 : Type.t)];
   let%bind ty1 = normalize_ty t ty1 ~env in
   let%bind ty2 = normalize_ty t ty2 ~env in
@@ -93,7 +97,8 @@ let rec unify_ty_ty t ty1 ty2 ~env =
     if Intrinsic.Type.equal i1 i2
     then Ok ()
     else
-      Or_error.error_string
+      Type_error.error_string
+        ~loc:Span.dummy
         [%string "Incompatible types: %{i1#Intrinsic.Type} and %{i2#Intrinsic.Type}"]
   | Fun (args_left, result_left), Fun (args_right, result_right) ->
     let%bind () =
@@ -102,7 +107,8 @@ let rec unify_ty_ty t ty1 ty2 ~env =
       |> Result.map_error ~f:(function
         | `Error err -> err
         | `Mismatched_lengths ->
-          Error.of_string
+          Type_error.of_string
+            ~loc
             [%string
               "A different number of function arguments was provided to what we expected."])
     in
@@ -112,28 +118,36 @@ let rec unify_ty_ty t ty1 ty2 ~env =
     |> Result.map_error ~f:(function
       | `Error err -> err
       | `Mismatched_lengths ->
-        Error.of_string [%string "Tuple arguments had different number of members."])
+        Type_error.of_string
+          ~loc
+          [%string "Tuple arguments had different number of members."])
   | Apply (name1, args1), Apply (name2, args2) ->
     let%bind () =
       (* FIXME: follow type aliases *)
-      if Type_name.equal name1 name2
+      if Type_name.equal name1.value name2.value
       then Ok ()
       else
-        Or_error.error_string
-          [%string "Types %{name1#Type_name} and %{name2#Type_name} were not equal."]
+        Type_error.error_string
+          ~loc:(* FIXME: which one is the one we care about? *)
+               name1.loc
+          [%string
+            "Types %{name1.value#Type_name} and %{name2.value#Type_name} are not equal."]
     in
     iter2_result args1 args2 ~f:(fun ty1 ty2 -> unify_ty_ty t ty1 ty2 ~env)
     |> Result.map_error ~f:(function
       | `Error err -> err
       | `Mismatched_lengths ->
-        Error.of_string [%string "Tuple arguments had different number of members."])
+        Type_error.of_string
+          ~loc
+          [%string "Tuple arguments had different number of members."])
   | Var v1, Var v2 ->
     unify_var_var t v1 v2;
     Ok ()
   | Var v, ty | ty, Var v ->
     if Type.occurs ty ~var:v
     then
-      Or_error.error_string
+      Type_error.error_string
+        ~loc
         [%string "Type variable %{v#Type.Var} occurs in another type."]
     else (
       let repr = lookup_var t v in
@@ -142,21 +156,25 @@ let rec unify_ty_ty t ty1 ty2 ~env =
       Ok ())
   | Apply (type_name, _), Intrinsic intrinsic | Intrinsic intrinsic, Apply (type_name, _)
     ->
-    let%bind decl = Env.type_declaration env type_name in
+    let%bind decl = Env.type_declaration env type_name.value ~loc:type_name.loc in
     let%bind intrinsic' =
       match decl.shape with
       | Alias (Intrinsic i) -> Ok i
       | _ ->
-        Or_error.error_string
+        Type_error.error_string
+          ~loc:type_name.loc
           [%string
-            "Failed to unify types (got %{type_name#Type_name}, expected \
+            "Failed to unify types (got %{type_name.value#Type_name}, expected \
              %{intrinsic#Intrinsic.Type})"]
     in
     if Intrinsic.Type.equal intrinsic intrinsic'
     then Ok ()
-    else Or_error.error_string "Failed to unify types (mismatching intrinsic types)"
+    else
+      Type_error.error_string
+        ~loc:type_name.loc
+        "Failed to unify types (mismatching intrinsic types)"
   | t1, t2 ->
-    Or_error.error_s [%message "Failed to unify types" (t1 : Type.t) (t2 : Type.t)]
+    Type_error.error_s ~loc [%message "Failed to unify types" (t1 : Type.t) (t2 : Type.t)]
 ;;
 
 let solve t (constraints : Constraints.t) ~(env : Env.t) =
@@ -169,7 +187,7 @@ let solve t (constraints : Constraints.t) ~(env : Env.t) =
     { env with
       values =
         Map.map env.values ~f:(fun typ ->
-          let ty = normalize_ty t typ.ty ~env |> Or_error.ok_exn in
+          let ty = normalize_ty t typ.ty ~env |> Type_error.ok_exn in
           if debug
           then print_s [%message "final normalization" (typ : Type.Poly.t) (ty : Type.t)];
           { typ with ty })

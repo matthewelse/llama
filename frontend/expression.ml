@@ -15,8 +15,13 @@ module Const = struct
 end
 
 type t =
+  { desc : desc
+  ; loc : Span.t
+  }
+
+and desc =
   | Var of Ident.t
-  | Apply of t * t list
+  | Apply of t * t list Located.t
   | Lambda of Ident.t list * t
   | Let of
       { name : Ident.t
@@ -25,20 +30,20 @@ type t =
       }
   | Const of Const.t
   | Tuple of t list
-  | Construct of Constructor.t * t option
-  | Record of (Field_name.t * t) list (* | Sequence of t list*)
+  | Construct of Constructor.t Located.t * t option
+  | Record of (Field_name.t Located.t * t) list (* | Sequence of t list*)
   | Match of
       { scrutinee : t
       ; cases : (Pattern.t * t) list
       }
-[@@deriving sexp_of, variants]
+[@@deriving sexp_of]
 
-let const_int n = Const (Int (Int.to_string n))
-let const_string s = Const (String s)
+let const_int n ~loc = { desc = Const (Int (Int.to_string n)); loc }
+let const_string s ~loc = { desc = Const (String s); loc }
 
 let rec is_syntactic_value t =
   (* see: http://mlton.org/ValueRestriction *)
-  match t with
+  match t.desc with
   | Var _ -> true
   | Const _ -> true
   | Lambda _ -> true

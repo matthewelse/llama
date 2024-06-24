@@ -690,18 +690,6 @@ program: Let Ident Equal Lbrace Ident Equal Int While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Let Ident Equal Lbrace Ident Equal Constructor Comma With
-##
-## Ends in an error in state: 90.
-##
-## separated_nonempty_list(Comma,expr_record_field) -> expr_record_field Comma . separated_nonempty_list(Comma,expr_record_field) [ Rbrace ]
-##
-## The known suffix of the stack is as follows:
-## expr_record_field Comma
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
 program: Let Ident Equal Let Ident Equal Int While
 ##
 ## Ends in an error in state: 92.

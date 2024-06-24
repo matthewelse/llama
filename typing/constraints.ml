@@ -24,11 +24,11 @@ let to_list t = t
 let rec infer (expr : Expression.t) ~env =
   let open Result.Let_syntax in
   let no_constraints ty : Type.t * t = ty, empty in
-  match expr with
+  match expr.desc with
   | Const (Int _) -> Ok (no_constraints (Intrinsic Int))
   | Const (String _) -> Ok (no_constraints (Intrinsic String))
   | Var v ->
-    let%bind poly_type = Env.value env v in
+    let%bind poly_type = Env.value env v ~loc:expr.loc in
     let type_ = Type.Poly.init poly_type in
     Ok (no_constraints type_)
   | Lambda (args, body) ->
@@ -39,24 +39,32 @@ let rec infer (expr : Expression.t) ~env =
       ( Type.Fun (List.map arg_types ~f:(fun (_, var) -> Type.var var), body_type)
       , body_constraints )
   | Apply (function_, args) ->
-    let%bind args = List.map args ~f:(infer ~env) |> Result.all in
+    let args_loc = args.loc in
+    let%bind args = List.map args.value ~f:(infer ~env) |> Result.all in
     let return_ty : Type.t = Var (Type.Var.create ()) in
     let fun_ty : Type.t = Fun (List.map args ~f:fst, return_ty) in
-    let%bind fun_constraints = check function_ fun_ty ~env in
+    let%bind fun_constraints = check function_ fun_ty ~env ~loc:args_loc in
     Ok
       ( return_ty
       , List.fold ~init:fun_constraints args ~f:(fun acc (_, arg_constraints) ->
           merge acc arg_constraints) )
   | Let { name; value; in_ } ->
     (* [let v = x in y] should be equivalent to [(fun v -> y) x] *)
-    infer (Apply (Lambda ([ name ], in_), [ value ])) ~env
+    infer
+      { expr with
+        desc =
+          Apply
+            ( { desc = Lambda ([ name ], in_); loc = expr.loc }
+            , { value = [ value ]; loc = value.loc } )
+      }
+      ~env
   | Tuple elems ->
     let%bind types = List.map elems ~f:(infer ~env) |> Result.all in
     let types, out = List.unzip types in
     let ty : Type.t = Tuple types in
     Ok (ty, merge_list out)
   | Construct (constructor_name, arg) -> infer_constructor constructor_name arg ~env
-  | Record fields -> infer_record fields ~env
+  | Record fields -> infer_record fields ~env ~loc:expr.loc
   | Match { scrutinee; cases } ->
     (* FIXME: check match completeness *)
     let%bind scrutinee_ty, scrutinee_constraints = infer scrutinee ~env in
@@ -70,7 +78,7 @@ let rec infer (expr : Expression.t) ~env =
             match expected_body_type with
             | None -> infer body ~env
             | Some expected_type ->
-              let%bind constraints = check body expected_type ~env in
+              let%bind constraints = check body expected_type ~env ~loc:body.loc in
               Ok (expected_type, constraints)
           in
           Ok
@@ -83,13 +91,13 @@ let rec infer (expr : Expression.t) ~env =
     in
     Ok (body_ty, merge scrutinee_constraints body_constraints)
 
-and infer_record fields ~env =
+and infer_record fields ~env ~loc =
   let open Result.Let_syntax in
   let%bind type_name =
     (* Arbitrarily choose the first field as the "representative" to pick a type for this record. *)
-    Env.field env (List.hd_exn fields |> fst)
+    Env.field env (List.hd_exn fields |> fst).value ~loc
   in
-  let%bind { args = type_args; shape } = Env.type_declaration env type_name in
+  let%bind { args = type_args; shape } = Env.type_declaration env type_name ~loc in
   (* Make fresh type variables for the args *)
   let type_args = List.map type_args ~f:(fun old -> old, Type.Var (Type.Var.create ())) in
   let type_arg_mapping = Type.Var.Map.of_alist_exn type_args in
@@ -102,8 +110,10 @@ and infer_record fields ~env =
          [Env.constructor] always points at the original declaration. *)
       failwith "Internal Compiler Error"
   in
-  let fields = List.sort fields ~compare:[%compare: Field_name.t * _] in
-  let field_types = List.sort field_types ~compare:[%compare: Field_name.t * _] in
+  let fields = List.sort fields ~compare:[%compare: Field_name.t Located.t * _] in
+  let field_types =
+    List.sort field_types ~compare:[%compare: Field_name.t Located.t * _]
+  in
   let%bind result =
     match
       List.map2
@@ -111,7 +121,7 @@ and infer_record fields ~env =
         field_types
         ~f:(fun (field_name, field_value) (expected_field_name, expected_field_type) ->
           let%bind `field_names_match =
-            if Field_name.equal field_name expected_field_name
+            if Field_name.equal field_name.value expected_field_name.value
             then Ok `field_names_match
             else
               (* FIXME: Better error message could include "did you mean", error should point at the field
@@ -120,19 +130,24 @@ and infer_record fields ~env =
 
                  Error message could also include a reference to why we thought this record had this type
                  (i.e. because of the arbitrarily-chosen field [List.hd_exn fields]). *)
-              Or_error.error_string
+              Type_error.error_string
+                ~loc:field_name.loc
                 [%string
-                  "Record field name mismatch: %{field_name#Field_name} does not match \
-                   expected name %{expected_field_name#Field_name}"]
+                  "Record field name mismatch: %{field_name.value#Field_name} does not \
+                   match expected name %{expected_field_name.value#Field_name}"]
           in
           let expected_field_type =
             Type.subst expected_field_type ~replacements:type_arg_mapping
           in
-          check field_value expected_field_type ~env)
+          check field_value expected_field_type ~env ~loc:field_value.loc)
     with
     | Unequal_lengths ->
-      let expected_fields = List.map field_types ~f:fst |> Field_name.Set.of_list in
-      let specified_fields = List.map fields ~f:fst |> Field_name.Set.of_list in
+      let expected_fields =
+        List.map field_types ~f:(fun ({ value; _ }, _) -> value) |> Field_name.Set.of_list
+      in
+      let specified_fields =
+        List.map fields ~f:(fun ({ value; _ }, _) -> value) |> Field_name.Set.of_list
+      in
       let missing_fields = Set.diff expected_fields specified_fields in
       let missing =
         if Set.is_empty missing_fields
@@ -171,15 +186,24 @@ and infer_record fields ~env =
           ]
         |> String.concat ~sep:" "
       in
-      Or_error.error_string error_message
+      Type_error.error_string ~loc error_message
     | Ok result -> Result.all result
   in
-  Ok (Type.Apply (type_name, type_args), merge_list result)
+  Ok
+    ( Type.Apply
+        ( { value = type_name; (* FIXME melse: this location is probably wrong *)
+                               loc }
+        , type_args )
+    , merge_list result )
 
 and infer_constructor constructor_name arg ~env =
   let open Result.Let_syntax in
-  let%bind type_name = Env.constructor env constructor_name in
-  let%bind { args = type_args; shape } = Env.type_declaration env type_name in
+  let%bind type_name =
+    Env.constructor env constructor_name.value ~loc:constructor_name.loc
+  in
+  let%bind { args = type_args; shape } =
+    Env.type_declaration env type_name ~loc:constructor_name.loc
+  in
   (* Make fresh type variables for the args *)
   let type_args = List.map type_args ~f:(fun old -> old, Type.Var (Type.Var.create ())) in
   let type_arg_mapping = Type.Var.Map.of_alist_exn type_args in
@@ -194,7 +218,10 @@ and infer_constructor constructor_name arg ~env =
   in
   let constructor =
     (* It's a bug for this constructor not to exist in the variant. *)
-    List.Assoc.find_exn constructors constructor_name ~equal:Constructor.equal
+    List.Assoc.find_exn
+      constructors
+      constructor_name
+      ~equal:(Located.value_equal ~f:Constructor.equal)
   in
   let%bind out =
     match constructor, arg with
@@ -203,30 +230,40 @@ and infer_constructor constructor_name arg ~env =
       Ok empty
     | Some constructor_typ, Some value ->
       let constructor_typ = Type.subst constructor_typ ~replacements:type_arg_mapping in
-      let%bind constraints = check value constructor_typ ~env in
+      let%bind constraints = check value constructor_typ ~env ~loc:value.loc in
       Ok constraints
-    | None, Some _ ->
+    | None, Some arg ->
       (* FIXME: this should point at the location of [value]. *)
-      Or_error.error_string
+      Type_error.error_string
+        ~loc:arg.loc
         [%string
-          "Arguments were provided to constructor %{constructor_name#Constructor}, but \
-           none were expected."]
+          "Arguments were provided to constructor %{constructor_name.value#Constructor}, \
+           but none were expected."]
     | Some _, None ->
       (* FIXME: better error message would include the expected type. We'll need to move more of the
          pretty printing logic into this library.
 
          This should point at the location of the constructor. Ideally the diagnostic should also
          refer to the constructor in the original type declaration too. *)
-      Or_error.error_string
+      Type_error.error_string
+        ~loc:constructor_name.loc
         [%string
-          "Arguments of were expected for constructor %{constructor_name#Constructor}, \
-           but none were provided."]
+          "Arguments of were expected for constructor \
+           %{constructor_name.value#Constructor}, but none were provided."]
   in
-  Ok (Type.Apply (type_name, type_args), out)
+  Ok
+    ( Type.Apply
+        ( { value = type_name
+          ; loc =
+              (* FIXME melse: this location doesn't really make sense *)
+              constructor_name.loc
+          }
+        , type_args )
+    , out )
 
-and check (expr : Expression.t) (expected_ty : Type.t) ~env : (t, _) result =
+and check (expr : Expression.t) (expected_ty : Type.t) ~env ~loc : (t, _) result =
   let open Result.Let_syntax in
-  match expr, expected_ty with
+  match expr.desc, expected_ty with
   | Const (Int _), Intrinsic Int -> Ok empty
   | Const (String _), Intrinsic String -> Ok empty
   | Lambda (args, body), Fun (arg_types, result) ->
@@ -238,15 +275,16 @@ and check (expr : Expression.t) (expected_ty : Type.t) ~env : (t, _) result =
       | Unequal_lengths ->
         let expected_num_args = List.length arg_types in
         let num_args = List.length args in
-        Or_error.error_string
+        Type_error.error_string
+          ~loc
           [%string
             "Function call expected %{expected_num_args#Int} args, but %{num_args#Int} \
              were provided."]
       | Ok env -> Ok env
     in
-    check body result ~env
-  | other, expected_ty ->
-    let%bind ty, constraints = infer other ~env in
+    check body result ~env ~loc:body.loc
+  | _, expected_ty ->
+    let%bind ty, constraints = infer expr ~env in
     Ok
       (add
          constraints
@@ -256,12 +294,16 @@ and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result
   let open Result.Let_syntax in
   match pattern with
   | Var name ->
-    let env = Env.with_var env name (Type.Poly.mono expected_ty) in
+    let env = Env.with_var env name.value (Type.Poly.mono expected_ty) in
     Ok (empty, env)
   | Construct (constructor_name, arg) ->
     (* FIXME: share this code with [check_constructor] *)
-    let%bind type_name = Env.constructor env constructor_name in
-    let%bind { args = type_args; shape } = Env.type_declaration env type_name in
+    let%bind type_name =
+      Env.constructor env constructor_name.value ~loc:constructor_name.loc
+    in
+    let%bind { args = type_args; shape } =
+      Env.type_declaration env type_name ~loc:constructor_name.loc
+    in
     (* Make fresh type variables for the args *)
     let type_args =
       List.map type_args ~f:(fun old -> old, Type.Var (Type.Var.create ()))
@@ -278,7 +320,10 @@ and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result
     in
     let arg_type =
       (* It's a bug for this constructor not to exist in the variant. *)
-      List.Assoc.find_exn constructors constructor_name ~equal:Constructor.equal
+      List.Assoc.find_exn
+        constructors
+        constructor_name
+        ~equal:(Located.value_equal ~f:Constructor.equal)
     in
     (match arg_type, arg with
      | None, None ->
@@ -286,7 +331,7 @@ and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result
          ( singleton
              (Same_type
                 ( expected_ty
-                , Apply (type_name, type_args)
+                , Apply ({ value = type_name; loc = constructor_name.loc }, type_args)
                 , [ Pattern_should_have_type (pattern, expected_ty) ] ))
          , env )
      | Some arg_type, Some arg_pattern ->
@@ -297,23 +342,25 @@ and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result
              constraints
              (Same_type
                 ( expected_ty
-                , Apply (type_name, type_args)
+                , Apply ({ value = type_name; loc = constructor_name.loc }, type_args)
                 , [ Pattern_should_have_type (pattern, expected_ty) ] ))
          , env )
      | Some _, None ->
        (* FIXME: this should produce an error that points to the (argument-less) pattern, with an info
           annotation pointing to the original type declaration. *)
-       Or_error.error_string
+       Type_error.error_string
+         ~loc:constructor_name.loc
          [%string
-           "Constructor %{constructor_name#Constructor} expects an argument, but none \
-            was provided."]
+           "Constructor %{constructor_name.value#Constructor} expects an argument, but \
+            none was provided."]
      | None, Some _ ->
        (* FIXME: this should produce an error that points to the pattern arguments, with an info
           annotation pointing to the original type declaration. *)
-       Or_error.error_string
+       Type_error.error_string
+         ~loc:constructor_name.loc
          [%string
-           "Constructor %{constructor_name#Constructor} does not expect an argument, but \
-            one was provided."])
+           "Constructor %{constructor_name.value#Constructor} does not expect an \
+            argument, but one was provided."])
   | Tuple patterns ->
     let type_vars = List.map patterns ~f:(fun pattern -> pattern, Type.Var.create ()) in
     let%bind env, nested_constraints =

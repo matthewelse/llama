@@ -1,6 +1,33 @@
 open! Core
 open! Async
 
+let type_check_with_error_reporting
+  ?(env = Llama_typing.Env.empty)
+  ast
+  ~get_code
+  ~dump_type_env
+  =
+  match Llama_typing.Infer.type_ast ast ~env with
+  | Ok env ->
+    if dump_type_env
+    then (
+      Core.print_s [%message (env : Llama_typing.Env.t)];
+      Core.printf "%!");
+    Ok env
+  | Error { message; primary_location } ->
+    let error_output =
+      Diagnostics.create
+        ~code:(get_code ())
+        ~message:"Type Error"
+        ~error_code:[%string "EXXXX"]
+        ~error_offset:(fst primary_location)
+        ~labels:{ primary = { span = primary_location; message }; secondary = [] }
+        Error
+    in
+    Diagnostics.render error_output Format.err_formatter;
+    Error 2
+;;
+
 let parse_with_error_reporting lexbuf ~get_code ~dump_ast =
   match Llama_frontend.Parser.program Llama_frontend.Lexer.read lexbuf with
   | exception Llama_frontend.Parser.Error n ->
@@ -44,24 +71,17 @@ let compile =
           In_channel.with_file (File_path.to_string source_file) ~f:(fun in_channel ->
             let lexbuf = Lexing.from_channel in_channel in
             Lexing.set_filename lexbuf (File_path.to_string source_file);
+            let get_code () =
+              In_channel.seek in_channel 0L;
+              In_channel.input_all in_channel
+            in
             match
-              parse_with_error_reporting
-                lexbuf
-                ~get_code:(fun () ->
-                  In_channel.seek in_channel 0L;
-                  In_channel.input_all in_channel)
-                ~dump_ast
+              let%bind.Result ast =
+                parse_with_error_reporting lexbuf ~get_code ~dump_ast
+              in
+              type_check_with_error_reporting ast ~get_code ~dump_type_env
             with
-            | Ok ast ->
-              (match Llama_typing.Infer.type_ast ast ~env:Llama_typing.Env.empty with
-               | Ok env ->
-                 if dump_type_env
-                 then (
-                   print_s [%message (env : Llama_typing.Env.t)];
-                   printf "%!")
-               | Error error ->
-                 Core.eprint_s [%message "Error while type checking" (error : Error.t)]);
-              return ()
+            | Ok _ -> return ()
             | Error n -> exit n)
         in
         Deferred.Or_error.return ()]
@@ -85,17 +105,14 @@ let repl =
             LNoise.history_add code |> (ignore : _ result -> unit);
             let lexbuf = Lexing.from_string code in
             Lexing.set_filename lexbuf "<stdin>";
+            let get_code () = code in
             (match
-               parse_with_error_reporting lexbuf ~get_code:(fun () -> code) ~dump_ast
+               let%bind.Result ast =
+                 parse_with_error_reporting lexbuf ~get_code ~dump_ast
+               in
+               type_check_with_error_reporting ast ~get_code ~dump_type_env ~env:!env
              with
-             | Ok ast ->
-               (match Llama_typing.Infer.type_ast ~env:!env ast with
-                | Ok env' ->
-                  env := env';
-                  if dump_type_env
-                  then Core.print_s [%message (!env : Llama_typing.Env.t)]
-                | Error error ->
-                  Core.eprint_s [%message "Error while type checking" (error : Error.t)])
+             | Ok env' -> env := env'
              | Error _ -> ());
             true
           | None -> (* This usually means sigint *) false

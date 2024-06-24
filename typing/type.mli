@@ -17,7 +17,7 @@ end
 
 type 'var t_generic =
   | Var of 'var
-  | Apply of Type_name.t * 'var t_generic list
+  | Apply of Type_name.t Located.t * 'var t_generic list
   | Fun of 'var t_generic list * 'var t_generic
   | Tuple of 'var t_generic list
   | Intrinsic of Intrinsic.Type.t
@@ -56,11 +56,11 @@ module Constructor : sig
     type t =
       | Alias of ty
       | Record of
-          { fields : (Field_name.t * ty) list
+          { fields : (Field_name.t Located.t * ty) list
           ; id : Id.t
           }
       | Variant of
-          { constructors : (Constructor.t * ty option) list
+          { constructors : (Constructor.t Located.t * ty option) list
           ; id : Id.t
           }
     [@@deriving sexp_of]
@@ -77,7 +77,7 @@ val occurs : t -> var:Var.t -> bool
 val free_type_vars : t -> Var.Set.t
 
 (** [const name] is a type with no type parameters. *)
-val const : Type_name.t -> t
+val const : Type_name.t Located.t -> t
 
 val intrinsic : Intrinsic.Type.t -> t
 val generalize : t -> env:Poly.t Ident.Map.t -> Poly.t

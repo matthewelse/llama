@@ -88,17 +88,19 @@ let let_binding ==
 (* Type declarations *)
 
 let type_vars ==
-  | type_var = Type_var; { [ type_var ] }
-  | "(" ; type_vars = separated_nonempty_list(",", Type_var); ")" ; { type_vars }
+  | type_var = located(Type_var); { [ type_var ] }
+  | "(" ; type_vars = separated_nonempty_list(",", located(Type_var)); ")" ; { type_vars }
+
+let located(A) == | value = A; { ({ value; loc = $sloc } : _ Located.t) }
 
 let type_declaration ==
-  | "type"; name = type_id; "="; desc = type_desc;
+  | "type"; name = located(type_id); "="; desc = type_desc;
     { { Type_declaration.name
       ; type_params = []
       ; type_shape = desc
       }
     }
-  | "type"; type_params = type_vars; name = type_id; "="; desc = type_desc;
+  | "type"; type_params = type_vars; name = located(type_id); "="; desc = type_desc;
     {
       { Type_declaration.name
       ; type_params
@@ -107,22 +109,24 @@ let type_declaration ==
     }
 
 let type_desc :=
-  | id = type_id;                     { Type_shape.Alias (Apply (id, [])) }
+  | id = located(type_id);            { Type_shape.Alias ({ desc = Apply (id, [])
+                                                          ; loc = $sloc }) }
   | "{"; fields = record_fields; "}"; { Type_shape.Record { fields } }
-  | name = String;                    { Type_shape.Alias (Intrinsic (Intrinsic.Type.of_string name)) }
+  | name = String;                    { Type_shape.Alias ({ desc = Intrinsic (Intrinsic.Type.of_string name)
+                                                          ; loc = $sloc }) }
   | constructors = variant;           { Type_shape.Variant { constructors } }
 
 let variant :=
   | option("|"); constructors = separated_list("|", constructor); { constructors }
 
 let constructor :=
-  | ~ = constructor_name; "of"; ~ = type_; { (constructor_name, Some type_) }
-  | ~ = constructor_name; { (constructor_name, None) }
+  | constructor_name = located(constructor_name); "of"; ~ = type_; { (constructor_name, Some type_) }
+  | constructor_name = located(constructor_name); { (constructor_name, None) }
 
 let record_fields == separated_nonempty_list(";", record_field)
 
 let record_field :=
-  | field_name = field_id; ":"; ~ = type_; { (field_name, type_) }
+  | field_name = located(field_id); ":"; ~ = type_; { (field_name, type_) }
 
 let intrinsic_declaration :=
   | "intrinsic"; name = ident; ":"; ~ = type_; "="; intrinsic_name = String; {
@@ -130,38 +134,40 @@ let intrinsic_declaration :=
   }
 
 let base_type :=
-  | ~ = Type_var;    <Type.Var>
-  | ~ = type_id;     { Type.Apply (type_id, []) }
-  | type_var = Type_var; ~ = type_id;     { Type.Apply (type_id, [ Type.Var type_var ]) }
+  | v = Type_var;    { { Type.desc = Var v; loc = $sloc } }
+  | type_id = located(type_id);     { { Type.desc = Apply (type_id, []); loc = $sloc } }
+  | type_var = Type_var; type_id = located(type_id);     { { Type.desc = Apply (type_id, [ { desc = Var type_var; loc = $loc(type_var) } ]); loc = $sloc } }
   | "("; ~ = type_; ")"; <>
 
 let inter_type :=
   | ~ = base_type; "*"; ~ = inter_type; {
     match (inter_type : Type.t) with
-    | Tuple elems -> Type.Tuple (base_type :: elems)
-    | _ -> Type.Tuple([ base_type; inter_type ])
+    | { desc = Tuple elems; _ } -> { inter_type with desc = Tuple (base_type :: elems) }
+    | _ -> { Type.desc = Tuple([ base_type; inter_type ]); loc = $sloc }
   }
   | ~ = base_type; { base_type }
 
 let type_ :=
   | ~ = inter_type; "->"; ~ = type_; {
     match (type_ : Type.t) with
-    | Fun (args, ret) -> Type.Fun (inter_type :: args, ret)
-    | _ -> Type.Fun([ inter_type ], type_)
+    | { desc = Fun (args, ret); _} -> { type_ with desc = Type.Fun (inter_type :: args, ret)}
+    | _ -> { Type.desc = Fun([ inter_type ], type_)
+           ; loc = $loc
+           }
   }
   | ~ = inter_type; { inter_type }
 
 (* Expressions *)
 
 let expression :=
-  | ~ = one_expression; <>
+  | expr = one_expression; { ({ desc = expr; loc = $sloc } : Expression.t) }
   (* | "("; ~ = separated_list(";", one_expression); ")"; <Sequence> *)
 
 let one_expression :=
-  | ~ = literal; <Const>
+  | ~ = literal; { Const literal }
   (* | "-"; ~ = expression; <Negative> *)
   (* | e1 = expression; ~ = binop; e2 = expression; { Binary (binop, e1, e2) } *)
-  | "{"; ~ = separated_nonempty_list(",", expr_record_field); "}"; <Record>
+  | "{"; fields = separated_nonempty_list(";", expr_record_field); "}"; { Record fields }
   (* We need some redundant indexing rules to work around shift/reduce conflicts. *)
   (* | element_type = type_id; "["; size = expression; "]"; "of"; init = expression;
     { Array { element_type; size; init } } *)
@@ -176,26 +182,29 @@ let one_expression :=
   | "for"; ~ = ident; ":="; lo = expression; "to"; hi = expression; "do"; body = expression; { For { ident; lo; hi; body } }
   | "break"; { Break } *)
   | "let"; name = ident; "="; value = expression; "in"; in_ = expression; { Let { name; value; in_ } }
-  | constructor = constructor_name; ~ = expression; { Construct (constructor, Some expression) }
-  | constructor = constructor_name; { Construct (constructor, None) }
-  | func = ident; "("; args = separated_list(",", expression); ")"; { Apply (Var func, args) }
-  | "("; ~ = expression; ")"; { expression }
+  | constructor = located(constructor_name); ~ = expression; { Construct (constructor, Some expression) }
+  | constructor = located(constructor_name); { Construct (constructor, None) }
+  | func = ident; args = located(function_args); { Apply ({ desc = Var func; loc = $loc(func) }, args) }
+  | "("; ~ = expression; ")"; { expression.desc }
   | "("; fst = expression; ","; args = separated_nonempty_list(",", expression); ")"; { Tuple (fst :: args) }
   | "match"; scrutinee = expression; "with"; option("|"); cases = separated_nonempty_list("|", match_case); { Match { scrutinee; cases } }
   | "fun"; "(" ; args = separated_list(",", ident); ")"; "->"; body = expression; { Lambda (args, body) }
+
+let function_args ==
+  | "("; args = separated_list(",", expression); ")"; { args }
 
 let match_case :=
   | ~ = pattern; "->"; ~ = expression; { (pattern, expression) }
 
 let pattern :=
-  | constructor = constructor_name; ~ = pattern; { Pattern.Construct (constructor, Some pattern) }
-  | constructor = constructor_name; { Pattern.Construct (constructor, None) }
-  | ~ = ident; { Pattern.Var ident }
+  | constructor = located(constructor_name); ~ = pattern; { Pattern.Construct (constructor, Some pattern) }
+  | constructor = located(constructor_name); { Pattern.Construct (constructor, None) }
+  | ~ = located(ident); <Pattern.Var>
   | "("; ~ = pattern; ")"; { pattern }
   | "("; fst = pattern; ","; args = separated_nonempty_list(",", pattern); ")"; { Pattern.Tuple (fst :: args) }
 
 let expr_record_field :=
-  | ~ = field_id; "="; ~ = expression; <>
+  | ~ = located(field_id); "="; ~ = expression; <>
 
 (* let binop ==
   | "|";  { Binary_operator.Or }

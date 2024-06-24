@@ -13,15 +13,31 @@ val empty : t
 
 (** Accessors *)
 
-val constructor : t -> Constructor.t -> Type_name.t Or_error.t
-val field : t -> Field_name.t -> Type_name.t Or_error.t
-val type_declaration : t -> Type_name.t -> Type.Constructor.t Or_error.t
-val value : t -> Ident.t -> Type.Poly.t Or_error.t
+val constructor : t -> Constructor.t -> loc:Span.t -> (Type_name.t, Type_error.t) result
+val field : t -> Field_name.t -> loc:Span.t -> (Type_name.t, Type_error.t) result
+
+val type_declaration
+  :  t
+  -> Type_name.t
+  -> loc:Span.t
+  -> (Type.Constructor.t, Type_error.t) result
+
+val value : t -> Ident.t -> loc:Span.t -> (Type.Poly.t, Type_error.t) result
 
 (** Modifers *)
 
-val with_constructors : t -> (Constructor.t * _) list -> type_name:Type_name.t -> t
-val with_fields : t -> (Field_name.t * _) list -> type_name:Type_name.t -> t Or_error.t
+val with_constructors
+  :  t
+  -> (Constructor.t Located.t * _) list
+  -> type_name:Type_name.t
+  -> (t, Type_error.t) result
+
+val with_fields
+  :  t
+  -> (Field_name.t Located.t * _) list
+  -> type_name:Type_name.t
+  -> (t, Type_error.t) result
+
 val with_type_declaration : t -> Type_name.t -> Type.Constructor.t -> t
 val with_var : t -> Ident.t -> Type.Poly.t -> t
 val with_vars : t -> (Ident.t * Type.Var.t) list -> t

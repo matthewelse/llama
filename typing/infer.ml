@@ -8,7 +8,7 @@ let maybe_generalize_expression_type expr ty ~(env : Env.t) =
 ;;
 
 let type_of_let_binding expr env =
-  let%bind.Or_error ty, constraints = Constraints.infer expr ~env in
+  let%bind.Result ty, constraints = Constraints.infer expr ~env in
   (* FIXME melse: at some point we should generalize types. *)
   Ok (ty, constraints)
 ;;
@@ -39,12 +39,14 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
       let type_ = Type.Poly.of_ast type_ ~var_mapping:String.Map.empty in
       let env = Env.with_var env name type_ in
       Ok env
-    | Type_declaration { name = type_name; type_params; type_shape } ->
-      let type_params = List.map type_params ~f:(fun name -> name, Type.Var.create ()) in
+    | Type_declaration { name = { value = type_name; _ }; type_params; type_shape } ->
+      let type_params =
+        List.map type_params ~f:(fun { value = name; _ } -> name, Type.Var.create ())
+      in
       let type_var_mapping =
         String.Map.of_alist_reduce type_params ~f:(fun _ most_recent -> most_recent)
       in
-      let%bind.Or_error shape, env =
+      let%bind.Result shape, env =
         match type_shape with
         | Alias ty ->
           let ty = Type.of_ast ty ~var_mapping:type_var_mapping in
@@ -57,7 +59,7 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
           let shape : Type.Constructor.Shape.t =
             Record { fields = record_fields; id = Type.Id.create () }
           in
-          let%bind.Or_error env = Env.with_fields env record_fields ~type_name in
+          let%bind.Result env = Env.with_fields env record_fields ~type_name in
           Ok (shape, env)
         | Variant { constructors = variant_constructors } ->
           let variant_constructors =
@@ -67,7 +69,8 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
           let shape : Type.Constructor.Shape.t =
             Variant { constructors = variant_constructors; id = Type.Id.create () }
           in
-          Ok (shape, Env.with_constructors env variant_constructors ~type_name)
+          let%bind env = Env.with_constructors env variant_constructors ~type_name in
+          Ok (shape, env)
       in
       let constructor : Type.Constructor.t =
         { args = List.map ~f:snd type_params; shape }

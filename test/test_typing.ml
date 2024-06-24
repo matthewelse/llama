@@ -12,7 +12,7 @@ let test_fragment ?(pp_ast = false) code =
     ast
   in
   let result = Llama_typing.Infer.type_ast ast in
-  print_s [%message (result : Env.t Or_error.t)]
+  print_s [%message (result : (Env.t, Type_error.t) result)]
 ;;
 
 let%expect_test "int" =

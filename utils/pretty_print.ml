@@ -23,7 +23,7 @@ let pp_tv formatter tv ~tvs =
 let rec pp_type' formatter (ty : Type.t) ~tvs =
   match ty with
   | Var tv -> pp_tv formatter tv ~tvs
-  | Apply (n, []) -> Format.pp_print_string formatter (Type_name.to_string n)
+  | Apply (n, []) -> Format.pp_print_string formatter (Type_name.to_string n.value)
   | Apply (n, vars) ->
     Format.pp_print_char formatter '(';
     Format.pp_print_list
@@ -32,7 +32,7 @@ let rec pp_type' formatter (ty : Type.t) ~tvs =
       formatter
       vars;
     Format.pp_print_string formatter ") ";
-    Format.pp_print_string formatter (Type_name.to_string n)
+    Format.pp_print_string formatter (Type_name.to_string n.value)
   | Fun (args, r) ->
     Format.pp_print_list
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " -> ")
@@ -89,9 +89,9 @@ let pp_type formatter ty =
 ;;
 
 let rec pp_ast_type formatter (ty : Ast.Type.t) =
-  match ty with
+  match ty.desc with
   | Var tv -> Format.pp_print_string formatter tv
-  | Apply (n, []) -> Format.pp_print_string formatter (Type_name.to_string n)
+  | Apply (n, []) -> Format.pp_print_string formatter (Type_name.to_string n.value)
   | Apply (n, vars) ->
     Format.pp_print_char formatter '(';
     Format.pp_print_list
@@ -100,7 +100,7 @@ let rec pp_ast_type formatter (ty : Ast.Type.t) =
       formatter
       vars;
     Format.pp_print_string formatter ") ";
-    Format.pp_print_string formatter (Type_name.to_string n)
+    Format.pp_print_string formatter (Type_name.to_string n.value)
   | Fun (args, r) ->
     Format.pp_print_list
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " -> ")
@@ -147,11 +147,11 @@ let pp_const formatter (const : Expression.Const.t) =
 
 let rec pp_pattern formatter (pattern : Pattern.t) =
   match pattern with
-  | Var ident -> pp_ident formatter ident
+  | Var ident -> pp_ident formatter ident.value
   | Construct (constructor, None) ->
-    Format.pp_print_string formatter (Constructor.to_string constructor)
+    Format.pp_print_string formatter (Constructor.to_string constructor.value)
   | Construct (constructor, Some pattern) ->
-    Format.pp_print_string formatter (Constructor.to_string constructor);
+    Format.pp_print_string formatter (Constructor.to_string constructor.value);
     Format.pp_print_char formatter ' ';
     pp_pattern formatter pattern
   | Tuple patterns ->
@@ -165,7 +165,7 @@ let rec pp_pattern formatter (pattern : Pattern.t) =
 ;;
 
 let rec pp_expr formatter (expr : Expression.t) =
-  match expr with
+  match expr.desc with
   | Var ident -> pp_ident formatter ident
   | Apply (f, arg) ->
     pp_expr formatter f;
@@ -174,7 +174,7 @@ let rec pp_expr formatter (expr : Expression.t) =
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
       pp_expr
       formatter
-      arg;
+      arg.value;
     Format.pp_print_char formatter ')'
   | Lambda (args, body) ->
     Format.pp_print_string formatter "fun ";
@@ -204,7 +204,7 @@ let rec pp_expr formatter (expr : Expression.t) =
       es;
     Format.pp_print_char formatter ')'
   | Construct (constructor, arg) ->
-    Format.pp_print_string formatter (Constructor.to_string constructor);
+    Format.pp_print_string formatter (Constructor.to_string constructor.value);
     (match arg with
      | None -> ()
      | Some arg ->
@@ -215,7 +215,7 @@ let rec pp_expr formatter (expr : Expression.t) =
     Format.pp_print_char formatter '{';
     Format.pp_print_list
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter "; ")
-      (fun formatter (ident, expr) ->
+      (fun formatter ({ Located.value = ident; _ }, expr) ->
         Format.pp_print_string formatter (Field_name.to_string ident);
         Format.pp_print_string formatter " = ";
         pp_expr formatter expr)
@@ -254,11 +254,13 @@ let pp_type_name formatter name =
   Format.pp_print_string formatter (Type_name.to_string name)
 ;;
 
-let pp_record_field formatter (ident, ty) =
+let pp_record_field formatter ({ Located.value = ident; _ }, ty) =
   Format.pp_print_string formatter (Field_name.to_string ident);
   Format.pp_print_string formatter " : ";
   pp_ast_type formatter ty
 ;;
+
+let pp_located pp_a formatter (located : _ Located.t) = pp_a formatter located.value
 
 let pp_type_shape formatter (shape : Ast.Type_shape.t) =
   match shape with
@@ -274,7 +276,7 @@ let pp_type_shape formatter (shape : Ast.Type_shape.t) =
   | Variant { constructors } ->
     Format.pp_print_list
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " ")
-      (fun formatter (name, ty) ->
+      (fun formatter ({ Located.value = name; _ }, ty) ->
         Format.pp_print_string formatter "| ";
         Format.pp_print_string formatter (Constructor.to_string name);
         match ty with
@@ -300,14 +302,14 @@ let pp_structure_item formatter (item : Ast.Structure_item.t) =
     pp_ast_polytype formatter type_;
     Format.pp_print_string formatter " = ";
     pp_intrinsic formatter intrinsic
-  | Type_declaration { name; type_params; type_shape } ->
+  | Type_declaration { name = { value = name; _ }; type_params; type_shape } ->
     Format.pp_print_string formatter "type ";
     if not (List.is_empty type_params)
     then (
       if List.length type_params > 1 then Format.pp_print_char formatter '(';
       Format.pp_print_list
         ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
-        (fun formatter tv -> Format.pp_print_string formatter tv)
+        (pp_located (fun formatter tv -> Format.pp_print_string formatter tv))
         formatter
         type_params;
       if List.length type_params > 1 then Format.pp_print_char formatter ')';

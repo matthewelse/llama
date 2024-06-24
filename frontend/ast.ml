@@ -3,9 +3,14 @@ open! Import
 
 module Type = struct
   type t =
+    { desc : desc
+    ; loc : Span.t
+    }
+
+  and desc =
     | Var of string
     | Intrinsic of Intrinsic.Type.t
-    | Apply of (Type_name.t * t list)
+    | Apply of (Type_name.t Located.t * t list)
     | Fun of (t list * t)
     | Tuple of t list
   [@@deriving sexp_of]
@@ -21,7 +26,7 @@ module Type = struct
   end
 
   let rec free_type_vars t ~acc =
-    match t with
+    match t.desc with
     | Var v -> v :: acc
     | Intrinsic _ -> acc
     | Apply (_, args) ->
@@ -43,15 +48,15 @@ end
 module Type_shape = struct
   type t =
     | Alias of Type.t
-    | Record of { fields : (Field_name.t * Type.t) list }
-    | Variant of { constructors : (Constructor.t * Type.t option) list }
+    | Record of { fields : (Field_name.t Located.t * Type.t) list }
+    | Variant of { constructors : (Constructor.t Located.t * Type.t option) list }
   [@@deriving sexp_of]
 end
 
 module Type_declaration = struct
   type t =
-    { name : Type_name.t
-    ; type_params : string list
+    { name : Type_name.t Located.t
+    ; type_params : string Located.t list
     ; type_shape : Type_shape.t
     }
   [@@deriving sexp_of]

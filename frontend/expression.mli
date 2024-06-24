@@ -11,8 +11,13 @@ module Const : sig
 end
 
 type t =
+  { desc : desc
+  ; loc : Span.t
+  }
+
+and desc =
   | Var of Ident.t
-  | Apply of t * t list
+  | Apply of t * t list Located.t
   | Lambda of Ident.t list * t
   | Let of
       { name : Ident.t
@@ -21,15 +26,14 @@ type t =
       }
   | Const of Const.t
   | Tuple of t list
-  | Construct of Constructor.t * t option
-  | Record of (Field_name.t * t) list
+  | Construct of Constructor.t Located.t * t option
+  | Record of (Field_name.t Located.t * t) list
   | Match of
       { scrutinee : t
       ; cases : (Pattern.t * t) list
       }
-    (* | Sequence of t list*)
-[@@deriving sexp_of, variants]
+[@@deriving sexp_of]
 
-val const_int : int -> t
-val const_string : string -> t
+val const_int : int -> loc:Span.t -> t
+val const_string : string -> loc:Span.t -> t
 val is_syntactic_value : t -> bool

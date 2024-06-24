@@ -17,47 +17,61 @@ let empty =
   }
 ;;
 
-let field t name =
+let field t name ~loc =
   Map.find t.fields name
-  |> Or_error.of_option
-       ~error:(Error.of_string [%string "Unbound field [%{name#Field_name}]"])
+  |> Result.of_option
+       ~error:(Type_error.of_string ~loc [%string "Unbound field [%{name#Field_name}]"])
 ;;
 
-let constructor t name =
+let constructor t name ~loc =
   Map.find t.constructors name
-  |> Or_error.of_option
-       ~error:(Error.of_string [%string "Unbound constructor %{name#Constructor}"])
+  |> Result.of_option
+       ~error:
+         (Type_error.of_string ~loc [%string "Unbound constructor %{name#Constructor}"])
 ;;
 
-let type_declaration t name =
+let type_declaration t name ~loc =
   Map.find t.type_declarations name
-  |> Or_error.of_option
-       ~error:(Error.of_string [%string "Unbound type %{name#Type_name}"])
+  |> Result.of_option
+       ~error:(Type_error.of_string ~loc [%string "Unbound type %{name#Type_name}"])
 ;;
 
-let value t name =
+let value t name ~loc =
   Map.find t.values name
-  |> Or_error.of_option
-       ~error:(Error.of_string [%string "Unbound variable [%{name#Ident}]"])
+  |> Result.of_option
+       ~error:(Type_error.of_string ~loc [%string "Unbound variable [%{name#Ident}]"])
 ;;
 
 let with_fields t fields ~type_name =
-  let%bind.Or_error fields =
-    List.fold_result fields ~init:t.fields ~f:(fun fields (name, _) ->
-      match Map.add fields ~key:name ~data:type_name with
-      | `Ok fields -> Ok fields
-      | `Duplicate ->
-        Error (Error.of_string [%string "Duplicate field [%{name#Field_name}]"]))
+  let%bind.Result fields =
+    List.fold_result
+      fields
+      ~init:t.fields
+      ~f:(fun fields ({ Located.value = name; loc }, _) ->
+        match Map.add fields ~key:name ~data:type_name with
+        | `Ok fields -> Ok fields
+        | `Duplicate ->
+          Error
+            (Type_error.of_string ~loc [%string "Duplicate field [%{name#Field_name}]"]))
   in
   Ok { t with fields }
 ;;
 
 let with_constructors t constructors ~type_name =
-  { t with
-    constructors =
-      List.fold constructors ~init:t.constructors ~f:(fun fields (name, _) ->
-        Map.add_exn fields ~key:name ~data:type_name)
-  }
+  let%bind.Result constructors =
+    List.fold_result
+      constructors
+      ~init:t.constructors
+      ~f:(fun constructors ({ Located.value = name; loc }, _) ->
+        match Map.add constructors ~key:name ~data:type_name with
+        | `Ok fields -> Ok fields
+        | `Duplicate ->
+          Error
+            (Type_error.of_string
+               ~loc
+               [%string "Duplicate constructor [%{name#Constructor}]"]))
+  in
+  Ok { t with constructors }
 ;;
 
 let with_type_declaration t name ty =
