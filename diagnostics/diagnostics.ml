@@ -130,7 +130,7 @@ let render t fmt =
   in
   let single_line_labels = Labels.single_line_labels t.labels in
   let max_line_number_length =
-    String.length (Int.to_string (List.length relevant_code))
+    String.length (Int.to_string (String.count t.code ~f:(Char.equal '\n')))
   in
   let space_padding = String.make (max_line_number_length + 1) ' ' in
   Format.fprintf fmt {|@{<red>error%s:@} %s|} error_code message;

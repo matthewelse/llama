@@ -53,7 +53,15 @@ let%expect_test "option pattern" =
     {|
     ("variable we care about:" (v 1))
     (constraints ((
-      Same_type (Var 1) (Apply option ((Var 2))) "pattern (construct: some args)")))
+      Same_type
+      (Var 1)
+      (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 2)))
+      ((
+        Pattern_should_have_type
+        (Construct (
+          ((value Some) (loc (:0:-1 :0:-1)))
+          ((Var ((value x) (loc (:0:-1 :0:-1)))))))
+        (Var 1))))))
     |}]
 ;;
 
@@ -100,12 +108,25 @@ let%expect_test "option match" =
       (values ((x ((quantifiers ()) (ty (Var 0))))))
       (type_declarations ((
         option (
-          (shape (Variant (constructors ((None ()) (Some ((Var 1))))) (id 0)))
+          (shape (
+            Variant
+            (constructors (
+              (((value None) (loc (:0:-1 :0:-1))) ())
+              (((value Some) (loc (:0:-1 :0:-1))) ((Var 1)))))
+            (id 0)))
           (args (1))))))
       (constructors ((Some option)))
       (fields ())))
     (constraints ((
-      Same_type (Var 0) (Apply option ((Var 2))) "pattern (construct: some args)")))
+      Same_type
+      (Var 0)
+      (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 2)))
+      ((
+        Pattern_should_have_type
+        (Construct (
+          ((value Some) (loc (:0:-1 :0:-1)))
+          ((Var ((value y) (loc (:0:-1 :0:-1)))))))
+        (Var 0))))))
     |}]
 ;;
 

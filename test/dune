@@ -2,6 +2,7 @@
  (name test_llama)
  (libraries
   core
+  diagnostics
   expect_test_helpers_core
   llama_typing
   llama_frontend

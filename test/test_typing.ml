@@ -7,24 +7,36 @@ let test_fragment ?(pp_ast = false) code =
   Type.Id.For_testing.reset_counter ();
   let ast =
     let lexbuf = Lexing.from_string code in
+    Lexing.set_filename lexbuf "<example>";
     let ast = Llama_frontend.Parser.program Llama_frontend.Lexer.read lexbuf in
     if pp_ast then Pretty_print.pp_ast Format.std_formatter ast;
     ast
   in
   let result = Llama_typing.Infer.type_ast ast in
-  print_s [%message (result : (Env.t, Type_error.t) result)]
+  match result with
+  | Ok env -> print_s [%message (env : Env.t)]
+  | Error { primary_location; message } ->
+    let error_output =
+      Diagnostics.create
+        ~code
+        ~message:"Type Error"
+        ~error_code:[%string "EXXXX"]
+        ~error_offset:(fst primary_location)
+        ~labels:{ primary = { span = primary_location; message }; secondary = [] }
+        Error
+    in
+    Diagnostics.render error_output Format.err_formatter
 ;;
 
 let%expect_test "int" =
   test_fragment "let x = 1";
   [%expect
     {|
-    (result (
-      Ok (
-        (values ((x ((quantifiers ()) (ty (Intrinsic Int))))))
-        (type_declarations ())
-        (constructors      ())
-        (fields            ()))))
+    (env (
+      (values ((x ((quantifiers ()) (ty (Intrinsic Int))))))
+      (type_declarations ())
+      (constructors      ())
+      (fields            ())))
     |}]
 ;;
 
@@ -41,19 +53,33 @@ let%expect_test "option" =
     |};
   [%expect
     {|
-    (result (
-      Ok (
-        (values (
-          (x ((quantifiers (1)) (ty (Apply option ((Var 1))))))
-          (y ((quantifiers ()) (ty (Apply option ((Intrinsic Int))))))))
-        (type_declarations ((
-          option (
-            (shape (Variant (constructors ((None ()) (Some ((Var 0))))) (id 0)))
-            (args (0))))))
-        (constructors (
-          (None option)
-          (Some option)))
-        (fields ()))))
+    (env (
+      (values (
+        (x (
+          (quantifiers (1))
+          (ty (
+            Apply
+            ((value option) (loc (<example>:4:12 <example>:4:16)))
+            ((Var 1))))))
+        (y (
+          (quantifiers ())
+          (ty (
+            Apply
+            ((value option) (loc (<example>:7:12 <example>:7:16)))
+            ((Intrinsic Int))))))))
+      (type_declarations ((
+        option (
+          (shape (
+            Variant
+            (constructors (
+              (((value None) (loc (<example>:2:23 <example>:2:27))) ())
+              (((value Some) (loc (<example>:2:30 <example>:2:34))) ((Var 0)))))
+            (id 0)))
+          (args (0))))))
+      (constructors (
+        (None option)
+        (Some option)))
+      (fields ())))
     |}]
 ;;
 
@@ -73,24 +99,43 @@ let%expect_test "list" =
     |};
   [%expect
     {|
-    (result (
-      Ok (
-        (values (
-          (x ((quantifiers (1)) (ty (Apply list ((Var 1))))))
-          (y ((quantifiers ()) (ty (Apply list ((Intrinsic Int))))))
-          (z ((quantifiers ()) (ty (Apply list ((Intrinsic Int))))))))
-        (type_declarations ((
-          list (
-            (shape (
-              Variant
-              (constructors (
-                (Nil ()) (Cons ((Tuple ((Var 0) (Apply list ((Var 0)))))))))
-              (id 0)))
-            (args (0))))))
-        (constructors (
-          (Cons list)
-          (Nil  list)))
-        (fields ()))))
+    (env (
+      (values (
+        (x (
+          (quantifiers (1))
+          (ty (
+            Apply ((value list) (loc (<example>:4:12 <example>:4:15))) ((Var 1))))))
+        (y (
+          (quantifiers ())
+          (ty (
+            Apply
+            ((value list) (loc (<example>:7:12 <example>:7:16)))
+            ((Intrinsic Int))))))
+        (z (
+          (quantifiers ())
+          (ty (
+            Apply
+            ((value list) (loc (<example>:10:12 <example>:10:16)))
+            ((Intrinsic Int))))))))
+      (type_declarations ((
+        list (
+          (shape (
+            Variant
+            (constructors (
+              (((value Nil) (loc (<example>:2:21 <example>:2:24))) ())
+              (((value Cons) (loc (<example>:2:27 <example>:2:31)))
+               ((
+                 Tuple (
+                   (Var 0)
+                   (Apply
+                     ((value list) (loc (<example>:2:43 <example>:2:47)))
+                     ((Var 0)))))))))
+            (id 0)))
+          (args (0))))))
+      (constructors (
+        (Cons list)
+        (Nil  list)))
+      (fields ())))
     |}]
 ;;
 
@@ -110,28 +155,49 @@ let%expect_test "list and options" =
     |};
   [%expect
     {|
-    (result (
-      Ok (
-        (values (
-          (hd ((quantifiers ()) (ty (Apply option ((Intrinsic Int))))))
-          (x ((quantifiers ()) (ty (Apply list ((Intrinsic Int))))))))
-        (type_declarations (
-          (list (
-            (shape (
-              Variant
-              (constructors (
-                (Nil ()) (Cons ((Tuple ((Var 0) (Apply list ((Var 0)))))))))
-              (id 0)))
-            (args (0))))
-          (option (
-            (shape (Variant (constructors ((None ()) (Some ((Var 1))))) (id 1)))
-            (args (1))))))
-        (constructors (
-          (Cons list)
-          (Nil  list)
-          (None option)
-          (Some option)))
-        (fields ()))))
+    (env (
+      (values (
+        (hd (
+          (quantifiers ())
+          (ty (
+            Apply
+            ((value option) (loc (<example>:10:23 <example>:10:27)))
+            ((Intrinsic Int))))))
+        (x (
+          (quantifiers ())
+          (ty (
+            Apply
+            ((value list) (loc (<example>:5:12 <example>:5:16)))
+            ((Intrinsic Int))))))))
+      (type_declarations (
+        (list (
+          (shape (
+            Variant
+            (constructors (
+              (((value Nil) (loc (<example>:2:21 <example>:2:24))) ())
+              (((value Cons) (loc (<example>:2:27 <example>:2:31)))
+               ((
+                 Tuple (
+                   (Var 0)
+                   (Apply
+                     ((value list) (loc (<example>:2:43 <example>:2:47)))
+                     ((Var 0)))))))))
+            (id 0)))
+          (args (0))))
+        (option (
+          (shape (
+            Variant
+            (constructors (
+              (((value None) (loc (<example>:3:23 <example>:3:27))) ())
+              (((value Some) (loc (<example>:3:30 <example>:3:34))) ((Var 1)))))
+            (id 1)))
+          (args (1))))))
+      (constructors (
+        (Cons list)
+        (Nil  list)
+        (None option)
+        (Some option)))
+      (fields ())))
     |}]
 ;;
 
@@ -146,25 +212,39 @@ let%expect_test "tuple" =
     |};
   [%expect
     {|
-    (result (
-      Ok (
-        (values ((
-          x (
-            (quantifiers ())
-            (ty (
-              Tuple (
-                (Apply a ())
-                (Apply b ())
-                (Apply c ()))))))))
-        (type_declarations (
-          (a ((shape (Variant (constructors ((A ()))) (id 0))) (args ())))
-          (b ((shape (Variant (constructors ((B ()))) (id 1))) (args ())))
-          (c ((shape (Variant (constructors ((C ()))) (id 2))) (args ())))))
-        (constructors (
-          (A a)
-          (B b)
-          (C c)))
-        (fields ()))))
+    (env (
+      (values ((
+        x (
+          (quantifiers ())
+          (ty (
+            Tuple (
+              (Apply ((value a) (loc (<example>:6:13 <example>:6:14))) ())
+              (Apply ((value b) (loc (<example>:6:16 <example>:6:17))) ())
+              (Apply ((value c) (loc (<example>:6:19 <example>:6:20))) ()))))))))
+      (type_declarations (
+        (a (
+          (shape (
+            Variant
+            (constructors ((((value A) (loc (<example>:2:15 <example>:2:16))) ())))
+            (id 0)))
+          (args ())))
+        (b (
+          (shape (
+            Variant
+            (constructors ((((value B) (loc (<example>:3:15 <example>:3:16))) ())))
+            (id 1)))
+          (args ())))
+        (c (
+          (shape (
+            Variant
+            (constructors ((((value C) (loc (<example>:4:15 <example>:4:16))) ())))
+            (id 2)))
+          (args ())))))
+      (constructors (
+        (A a)
+        (B b)
+        (C c)))
+      (fields ())))
     |}]
 ;;
 
@@ -175,14 +255,13 @@ let%expect_test "variables" =
     |};
   [%expect
     {|
-    (result (
-      Ok (
-        (values (
-          (x ((quantifiers ()) (ty (Intrinsic Int))))
-          (y ((quantifiers ()) (ty (Intrinsic Int))))))
-        (type_declarations ())
-        (constructors      ())
-        (fields            ()))))
+    (env (
+      (values (
+        (x ((quantifiers ()) (ty (Intrinsic Int))))
+        (y ((quantifiers ()) (ty (Intrinsic Int))))))
+      (type_declarations ())
+      (constructors      ())
+      (fields            ())))
     |}]
 ;;
 
@@ -198,20 +277,21 @@ let%expect_test "let _ = _ in _" =
   |};
   [%expect
     {|
-    (result (
-      Ok (
-        (values (
-          (add_int (
-            (quantifiers ())
-            (ty (
-              Fun
-              ((Apply int ())
-               (Apply int ()))
-              (Apply int ())))))
-          (y ((quantifiers ()) (ty (Apply int ()))))))
-        (type_declarations ((int ((shape (Alias (Intrinsic Int))) (args ())))))
-        (constructors ())
-        (fields       ()))))
+    (env (
+      (values (
+        (add_int (
+          (quantifiers ())
+          (ty (
+            Fun
+            ((Apply ((value int) (loc (<example>:3:22 <example>:3:25))) ())
+             (Apply ((value int) (loc (<example>:3:29 <example>:3:32))) ()))
+            (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ())))))
+        (y (
+          (quantifiers ())
+          (ty (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ()))))))
+      (type_declarations ((int ((shape (Alias (Intrinsic Int))) (args ())))))
+      (constructors ())
+      (fields       ())))
     |}]
 ;;
 
@@ -232,27 +312,28 @@ let%expect_test "lambdas" =
   |};
   [%expect
     {|
-    (result (
-      Ok (
-        (values (
-          (add_int (
-            (quantifiers ())
-            (ty (
-              Fun
-              ((Apply int ())
-               (Apply int ()))
-              (Apply int ())))))
-          (add_twice (
-            (quantifiers ())
-            (ty (
-              Fun
-              ((Apply int ())
-               (Apply int ()))
-              (Apply int ())))))
-          (y ((quantifiers ()) (ty (Apply int ()))))))
-        (type_declarations ((int ((shape (Alias (Intrinsic Int))) (args ())))))
-        (constructors ())
-        (fields       ()))))
+    (env (
+      (values (
+        (add_int (
+          (quantifiers ())
+          (ty (
+            Fun
+            ((Apply ((value int) (loc (<example>:3:22 <example>:3:25))) ())
+             (Apply ((value int) (loc (<example>:3:29 <example>:3:32))) ()))
+            (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ())))))
+        (add_twice (
+          (quantifiers ())
+          (ty (
+            Fun
+            ((Apply ((value int) (loc (<example>:3:22 <example>:3:25))) ())
+             (Apply ((value int) (loc (<example>:3:29 <example>:3:32))) ()))
+            (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ())))))
+        (y (
+          (quantifiers ())
+          (ty (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ()))))))
+      (type_declarations ((int ((shape (Alias (Intrinsic Int))) (args ())))))
+      (constructors ())
+      (fields       ())))
     |}]
 ;;
 
@@ -282,35 +363,75 @@ let%expect_test "polymorphism" =
   |};
   [%expect
     {|
-    (result (
-      Ok (
-        (values (
-          (a ((quantifiers ()) (ty (Apply option ((Intrinsic Int))))))
-          (hd (
-            (quantifiers (3))
-            (ty (Fun ((Apply list ((Var 3)))) (Apply option ((Var 3)))))))
-          (x ((quantifiers ()) (ty (Apply option ((Intrinsic Int))))))
-          (y (
-            (quantifiers ())
-            (ty (Apply option ((Apply option ((Intrinsic Int))))))))
-          (z ((quantifiers ()) (ty (Apply list ((Intrinsic Int))))))))
-        (type_declarations (
-          (list (
-            (shape (
-              Variant
-              (constructors (
-                (Nil ()) (Cons ((Tuple ((Var 1) (Apply list ((Var 1)))))))))
-              (id 1)))
-            (args (1))))
-          (option (
-            (shape (Variant (constructors ((None ()) (Some ((Var 0))))) (id 0)))
-            (args (0))))))
-        (constructors (
-          (Cons list)
-          (Nil  list)
-          (None option)
-          (Some option)))
-        (fields ()))))
+    (env (
+      (values (
+        (a (
+          (quantifiers ())
+          (ty (
+            Apply
+            ((value option) (loc (<example>:7:17 <example>:7:21)))
+            ((Intrinsic Int))))))
+        (hd (
+          (quantifiers (3))
+          (ty (
+            Fun
+            ((
+              Apply
+              ((value list) (loc (<example>:7:10 <example>:7:13)))
+              ((Var 3))))
+            (Apply
+              ((value option) (loc (<example>:7:17 <example>:7:21)))
+              ((Var 3)))))))
+        (x (
+          (quantifiers ())
+          (ty (
+            Apply
+            ((value option) (loc (<example>:7:17 <example>:7:21)))
+            ((Intrinsic Int))))))
+        (y (
+          (quantifiers ())
+          (ty (
+            Apply
+            ((value option) (loc (<example>:7:17 <example>:7:21)))
+            ((
+              Apply
+              ((value option) (loc (<example>:14:24 <example>:14:28)))
+              ((Intrinsic Int))))))))
+        (z (
+          (quantifiers ())
+          (ty (
+            Apply
+            ((value list) (loc (<example>:17:15 <example>:17:19)))
+            ((Intrinsic Int))))))))
+      (type_declarations (
+        (list (
+          (shape (
+            Variant
+            (constructors (
+              (((value Nil) (loc (<example>:3:23 <example>:3:26))) ())
+              (((value Cons) (loc (<example>:3:29 <example>:3:33)))
+               ((
+                 Tuple (
+                   (Var 1)
+                   (Apply
+                     ((value list) (loc (<example>:3:45 <example>:3:49)))
+                     ((Var 1)))))))))
+            (id 1)))
+          (args (1))))
+        (option (
+          (shape (
+            Variant
+            (constructors (
+              (((value None) (loc (<example>:2:25 <example>:2:29))) ())
+              (((value Some) (loc (<example>:2:32 <example>:2:36))) ((Var 0)))))
+            (id 0)))
+          (args (0))))))
+      (constructors (
+        (Cons list)
+        (Nil  list)
+        (None option)
+        (Some option)))
+      (fields ())))
     |}]
 ;;
 
@@ -330,7 +451,14 @@ let%expect_test "value restriction" =
   let y = set_ref (x, (Some 1))
   let z = set_ref (x, (Some None))
   |};
-  [%expect {| (result (Error "Failed to unify types (got option, expected %int)")) |}]
+  [%expect
+    {|
+    error[EXXXX]: Type Error
+       ╭─[<example>:13:28]
+    13 │   let z = set_ref (x, (Some None))
+       ┆                             ^^^^ Failed to unify types (got option, expected %int)
+    ───╯
+    |}]
 ;;
 
 let%expect_test "don't allow a ref to be set to two different types" =
@@ -351,5 +479,12 @@ let%expect_test "don't allow a ref to be set to two different types" =
     Unit
   ;;
   |};
-  [%expect {| (result (Error "Failed to unify types (got option, expected %int)")) |}]
+  [%expect
+    {|
+    error[EXXXX]: Type Error
+       ╭─[<example>:12:24]
+    12 │     let a = set_ref (y, Some 10) in
+       ┆                         ^^^^ Failed to unify types (got option, expected %int)
+    ───╯
+    |}]
 ;;
