@@ -146,7 +146,7 @@ let pp_const formatter (const : Expression.Const.t) =
 ;;
 
 let rec pp_pattern formatter (pattern : Pattern.t) =
-  match pattern with
+  match pattern.desc with
   | Var ident -> pp_ident formatter ident.value
   | Construct (constructor, None) ->
     Format.pp_print_string formatter (Constructor.to_string constructor.value)
@@ -297,12 +297,12 @@ let pp_structure_item formatter (item : Ast.Structure_item.t) =
     pp_expr formatter value
   | Intrinsic { name; intrinsic; type_ } ->
     Format.pp_print_string formatter "intrinsic ";
-    pp_ident formatter name;
+    pp_ident formatter name.value;
     Format.pp_print_string formatter " : ";
     pp_ast_polytype formatter type_;
     Format.pp_print_string formatter " = ";
     pp_intrinsic formatter intrinsic
-  | Type_declaration { name = { value = name; _ }; type_params; type_shape } ->
+  | Type_declaration { name = { value = name; _ }; type_params; type_shape; loc = _ } ->
     Format.pp_print_string formatter "type ";
     if not (List.is_empty type_params)
     then (

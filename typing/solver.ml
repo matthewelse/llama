@@ -7,6 +7,15 @@ type t = { vars : Type.t Union_find.t Type.Var.Table.t }
 
 let create () = { vars = Type.Var.Table.create () }
 
+let error ~annotations:((primary, _secondary) : Constraints.Annotations.t) message =
+  let loc =
+    match primary with
+    | Expression_should_have_type (expr, _) -> expr.loc
+    | Pattern_should_have_type (pat, _) -> pat.loc
+  in
+  Type_error.error_string ~loc message
+;;
+
 let sexp_of_t t =
   let vars =
     Hashtbl.to_alist t.vars
@@ -33,12 +42,12 @@ let rec normalize_ty t (ty : Type.t) ~env =
   | Apply (name, args) ->
     let%bind args = List.map args ~f:(normalize_ty t ~env) |> Result.all in
     (match%bind Env.type_declaration env name.value ~loc:name.loc with
-     | { shape = Alias (Intrinsic _); args = _ } ->
+     | { shape = Alias (Intrinsic _); args = _; loc = _ } ->
        (* FIXME melse: something about this abstraction feels wrong - maybe I should just
           remove primitive from [Type.t]? *)
        (* Treat intrinsic type aliases as opaque. *)
        Ok (Type.Apply (name, args))
-     | { shape = Alias ty; args = decl_args } ->
+     | { shape = Alias ty; args = decl_args; loc = _ } ->
        let replacements =
          List.map2_exn decl_args args ~f:(fun decl_arg arg -> decl_arg, arg)
          |> Type.Var.Map.of_alist_exn
@@ -83,12 +92,9 @@ let unify_var_var t v1 v2 =
   Union_find.union v1' v2'
 ;;
 
-let rec unify_ty_ty t ty1 ty2 ~env =
+let rec unify_ty_ty t ty1 ty2 ~env ~annotations =
   let open Result.Let_syntax in
-  let loc =
-    (* FIXME: todo *)
-    Span.dummy
-  in
+  let loc = Span.dummy in
   if debug then print_s [%message "unify_ty_ty" (ty1 : Type.t) (ty2 : Type.t)];
   let%bind ty1 = normalize_ty t ty1 ~env in
   let%bind ty2 = normalize_ty t ty2 ~env in
@@ -103,7 +109,7 @@ let rec unify_ty_ty t ty1 ty2 ~env =
   | Fun (args_left, result_left), Fun (args_right, result_right) ->
     let%bind () =
       iter2_result args_left args_right ~f:(fun arg_left arg_right ->
-        unify_ty_ty t arg_left arg_right ~env)
+        unify_ty_ty t arg_left arg_right ~env ~annotations)
       |> Result.map_error ~f:(function
         | `Error err -> err
         | `Mismatched_lengths ->
@@ -112,9 +118,9 @@ let rec unify_ty_ty t ty1 ty2 ~env =
             [%string
               "A different number of function arguments was provided to what we expected."])
     in
-    unify_ty_ty t result_left result_right ~env
+    unify_ty_ty t result_left result_right ~env ~annotations
   | Tuple t1s, Tuple t2s ->
-    iter2_result t1s t2s ~f:(fun ty1 ty2 -> unify_ty_ty t ty1 ty2 ~env)
+    iter2_result t1s t2s ~f:(fun ty1 ty2 -> unify_ty_ty t ty1 ty2 ~env ~annotations)
     |> Result.map_error ~f:(function
       | `Error err -> err
       | `Mismatched_lengths ->
@@ -133,7 +139,7 @@ let rec unify_ty_ty t ty1 ty2 ~env =
           [%string
             "Types %{name1.value#Type_name} and %{name2.value#Type_name} are not equal."]
     in
-    iter2_result args1 args2 ~f:(fun ty1 ty2 -> unify_ty_ty t ty1 ty2 ~env)
+    iter2_result args1 args2 ~f:(fun ty1 ty2 -> unify_ty_ty t ty1 ty2 ~env ~annotations)
     |> Result.map_error ~f:(function
       | `Error err -> err
       | `Mismatched_lengths ->
@@ -161,8 +167,8 @@ let rec unify_ty_ty t ty1 ty2 ~env =
       match decl.shape with
       | Alias (Intrinsic i) -> Ok i
       | _ ->
-        Type_error.error_string
-          ~loc:type_name.loc
+        error
+          ~annotations
           [%string
             "Failed to unify types (got %{type_name.value#Type_name}, expected \
              %{intrinsic#Intrinsic.Type})"]
@@ -181,7 +187,7 @@ let solve t (constraints : Constraints.t) ~(env : Env.t) =
   let open Result.Let_syntax in
   let%bind () =
     iter_result (Constraints.to_list constraints) ~f:(function
-      | Same_type (t1, t2, _note) -> unify_ty_ty t t1 t2 ~env)
+      | Same_type (t1, t2, annotations) -> unify_ty_ty t t1 t2 ~env ~annotations)
   in
   Ok
     { env with

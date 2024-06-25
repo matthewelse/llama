@@ -1,8 +1,13 @@
 open! Core
 open! Import
 
-type t =
+type desc =
   | Construct of (Constructor.t Located.t * t option)
   | Tuple of t list
   | Var of Ident.t Located.t
+
+and t =
+  { loc : Span.t
+  ; desc : desc
+  }
 [@@deriving sexp_of]

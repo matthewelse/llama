@@ -12,7 +12,12 @@ module Constraint = struct
   type 'a t = Same_type of Type.t * Type.t * 'a [@@deriving sexp_of]
 end
 
-type t = Annotation.t list Constraint.t list [@@deriving sexp_of]
+module Annotations = struct
+  (* FIXME melse: factor out [Nonempty_list.t] *)
+  type t = ( :: ) of Annotation.t * Annotation.t list [@@deriving sexp_of]
+end
+
+type t = Annotations.t Constraint.t list [@@deriving sexp_of]
 
 let add (t : t) c = c :: t
 let singleton c : t = [ c ]
@@ -38,15 +43,37 @@ let rec infer (expr : Expression.t) ~env =
     Ok
       ( Type.Fun (List.map arg_types ~f:(fun (_, var) -> Type.var var), body_type)
       , body_constraints )
-  | Apply (function_, args) ->
-    let args_loc = args.loc in
-    let%bind args = List.map args.value ~f:(infer ~env) |> Result.all in
+  | Apply (function_, arg_values) ->
+    (* type_of([$function_($arg_values...)])
+
+       - [arg_values] is a list of expressions, so just infer the type of each expression.
+       - Infer the type of [function_].
+       - [check] that the inferred type of [function_] is [Fun _].
+
+       We do this in two phases: first we generate fresh type variables for each argument to the
+       function, and then we add constraints that check that each type variable is equal to the
+       inferred type of each value in [arg_values]. This pushes type errors "down" into each
+       argument, rather than checking the function as a whole, giving better error messages (at
+       the cost of more constraints to iterate through). *)
+    let%bind arg_tys =
+      List.map arg_values.value ~f:(fun arg_value ->
+        let%bind.Result arg_ty, arg_constraints = infer arg_value ~env in
+        let fresh_ty = Type.Var (Type.Var.create ()) in
+        let fresh_type_equals_arg_ty : Annotations.t Constraint.t =
+          Same_type
+            (arg_ty, fresh_ty, [ Expression_should_have_type (arg_value, fresh_ty) ])
+        in
+        Ok ((arg_ty, fresh_type_equals_arg_ty :: arg_constraints), fresh_ty))
+      |> Result.all
+    in
     let return_ty : Type.t = Var (Type.Var.create ()) in
-    let fun_ty : Type.t = Fun (List.map args ~f:fst, return_ty) in
-    let%bind fun_constraints = check function_ fun_ty ~env ~loc:args_loc in
+    let%bind fun_constraints =
+      let fun_ty : Type.t = Fun (List.map arg_tys ~f:snd, return_ty) in
+      check function_ fun_ty ~env ~loc:function_.loc
+    in
     Ok
       ( return_ty
-      , List.fold ~init:fun_constraints args ~f:(fun acc (_, arg_constraints) ->
+      , List.fold ~init:fun_constraints arg_tys ~f:(fun acc ((_, arg_constraints), _) ->
           merge acc arg_constraints) )
   | Let { name; value; in_ } ->
     (* [let v = x in y] should be equivalent to [(fun v -> y) x] *)
@@ -97,7 +124,9 @@ and infer_record fields ~env ~loc =
     (* Arbitrarily choose the first field as the "representative" to pick a type for this record. *)
     Env.field env (List.hd_exn fields |> fst).value ~loc
   in
-  let%bind { args = type_args; shape } = Env.type_declaration env type_name ~loc in
+  let%bind { args = type_args; shape; loc = _ } =
+    Env.type_declaration env type_name ~loc
+  in
   (* Make fresh type variables for the args *)
   let type_args = List.map type_args ~f:(fun old -> old, Type.Var (Type.Var.create ())) in
   let type_arg_mapping = Type.Var.Map.of_alist_exn type_args in
@@ -107,7 +136,7 @@ and infer_record fields ~env ~loc =
     | Record { fields = field_types; id = _ } -> Ok field_types
     | _ ->
       (* It's a bug for this type not to be a variant. We don't need to worry about aliases, since
-         [Env.constructor] always points at the original declaration. *)
+         ; loc  = _    [Env.constructor] always points at the original declaration. *)
       failwith "Internal Compiler Error"
   in
   let fields = List.sort fields ~compare:[%compare: Field_name.t Located.t * _] in
@@ -189,19 +218,14 @@ and infer_record fields ~env ~loc =
       Type_error.error_string ~loc error_message
     | Ok result -> Result.all result
   in
-  Ok
-    ( Type.Apply
-        ( { value = type_name; (* FIXME melse: this location is probably wrong *)
-                               loc }
-        , type_args )
-    , merge_list result )
+  Ok (Type.Apply ({ value = type_name; loc }, type_args), merge_list result)
 
 and infer_constructor constructor_name arg ~env =
   let open Result.Let_syntax in
   let%bind type_name =
     Env.constructor env constructor_name.value ~loc:constructor_name.loc
   in
-  let%bind { args = type_args; shape } =
+  let%bind { args = type_args; shape; loc = type_decl_loc } =
     Env.type_declaration env type_name ~loc:constructor_name.loc
   in
   (* Make fresh type variables for the args *)
@@ -251,15 +275,7 @@ and infer_constructor constructor_name arg ~env =
           "Arguments of were expected for constructor \
            %{constructor_name.value#Constructor}, but none were provided."]
   in
-  Ok
-    ( Type.Apply
-        ( { value = type_name
-          ; loc =
-              (* FIXME melse: this location doesn't really make sense *)
-              constructor_name.loc
-          }
-        , type_args )
-    , out )
+  Ok (Type.Apply ({ value = type_name; loc = type_decl_loc }, type_args), out)
 
 and check (expr : Expression.t) (expected_ty : Type.t) ~env ~loc : (t, _) result =
   let open Result.Let_syntax in
@@ -292,7 +308,7 @@ and check (expr : Expression.t) (expected_ty : Type.t) ~env ~loc : (t, _) result
 
 and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result =
   let open Result.Let_syntax in
-  match pattern with
+  match pattern.desc with
   | Var name ->
     let env = Env.with_var env name.value (Type.Poly.mono expected_ty) in
     Ok (empty, env)
@@ -301,7 +317,7 @@ and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result
     let%bind type_name =
       Env.constructor env constructor_name.value ~loc:constructor_name.loc
     in
-    let%bind { args = type_args; shape } =
+    let%bind { args = type_args; shape; loc = _ } =
       Env.type_declaration env type_name ~loc:constructor_name.loc
     in
     (* Make fresh type variables for the args *)

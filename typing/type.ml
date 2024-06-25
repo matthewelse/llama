@@ -124,6 +124,7 @@ module Constructor = struct
   type t =
     { shape : Shape.t
     ; args : Var.t list
+    ; loc : Span.t
     }
   [@@deriving sexp_of]
 end

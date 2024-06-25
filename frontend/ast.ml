@@ -58,13 +58,14 @@ module Type_declaration = struct
     { name : Type_name.t Located.t
     ; type_params : string Located.t list
     ; type_shape : Type_shape.t
+    ; loc : Span.t
     }
   [@@deriving sexp_of]
 end
 
 module Value_intrinsic = struct
   type t =
-    { name : Ident.t
+    { name : Ident.t Located.t
     ; intrinsic : Intrinsic.Value.t
     ; type_ : Type.Poly.t
     }

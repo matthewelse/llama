@@ -6,7 +6,7 @@
 let message =
   fun s ->
     match s with
-    | 131 ->
+    | 133 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 75 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
@@ -20,21 +20,21 @@ let message =
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 67 ->
         "Expected `(` after `fun` in function definition.\n"
-    | 120 ->
+    | 122 ->
+        "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
+    | 121 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 119 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 117 ->
+    | 118 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 116 ->
+    | 115 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 113 ->
+    | 114 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 112 ->
+    | 111 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 109 ->
-        "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 107 ->
+    | 108 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 105 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
@@ -70,15 +70,15 @@ let message =
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 10 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 122 ->
+    | 124 ->
+        "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
+    | 131 ->
+        "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
+    | 130 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 129 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 128 ->
-        "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 127 ->
-        "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 125 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 97 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
@@ -134,7 +134,7 @@ let message =
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 17 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
-    | 126 ->
+    | 128 ->
         "Expected `:`.\n"
     | 19 ->
         "Expected a type.\n"

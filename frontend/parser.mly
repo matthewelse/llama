@@ -98,6 +98,7 @@ let type_declaration ==
     { { Type_declaration.name
       ; type_params = []
       ; type_shape = desc
+      ; loc = $sloc
       }
     }
   | "type"; type_params = type_vars; name = located(type_id); "="; desc = type_desc;
@@ -105,6 +106,7 @@ let type_declaration ==
       { Type_declaration.name
       ; type_params
       ; type_shape = desc
+      ; loc = $sloc
       }
     }
 
@@ -129,7 +131,7 @@ let record_field :=
   | field_name = located(field_id); ":"; ~ = type_; { (field_name, type_) }
 
 let intrinsic_declaration :=
-  | "intrinsic"; name = ident; ":"; ~ = type_; "="; intrinsic_name = String; {
+  | "intrinsic"; name = located(ident); ":"; ~ = type_; "="; intrinsic_name = String; {
     { Value_intrinsic.name; intrinsic = Intrinsic.Value.of_string intrinsic_name; type_ = Type.generalize type_ }
   }
 
@@ -196,12 +198,15 @@ let function_args ==
 let match_case :=
   | ~ = pattern; "->"; ~ = expression; { (pattern, expression) }
 
-let pattern :=
+let pattern_desc :=
   | constructor = located(constructor_name); ~ = pattern; { Pattern.Construct (constructor, Some pattern) }
   | constructor = located(constructor_name); { Pattern.Construct (constructor, None) }
   | ~ = located(ident); <Pattern.Var>
-  | "("; ~ = pattern; ")"; { pattern }
+  | "("; ~ = pattern_desc; ")"; { pattern_desc }
   | "("; fst = pattern; ","; args = separated_nonempty_list(",", pattern); ")"; { Pattern.Tuple (fst :: args) }
+
+let pattern :=
+  | pattern = pattern_desc; { { Pattern.desc = pattern; loc = $sloc } }
 
 let expr_record_field :=
   | ~ = located(field_id); "="; ~ = expression; <>

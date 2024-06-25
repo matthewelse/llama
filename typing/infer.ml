@@ -37,9 +37,10 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
       (* Surprisingly, the actual intrinsic used isn't that important for type checking. We trust
          the type provided by the standard library. *)
       let type_ = Type.Poly.of_ast type_ ~var_mapping:String.Map.empty in
-      let env = Env.with_var env name type_ in
+      let env = Env.with_var env name.value type_ in
       Ok env
-    | Type_declaration { name = { value = type_name; _ }; type_params; type_shape } ->
+    | Type_declaration { name = { value = type_name; _ }; type_params; type_shape; loc }
+      ->
       let type_params =
         List.map type_params ~f:(fun { value = name; _ } -> name, Type.Var.create ())
       in
@@ -73,7 +74,7 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
           Ok (shape, env)
       in
       let constructor : Type.Constructor.t =
-        { args = List.map ~f:snd type_params; shape }
+        { args = List.map ~f:snd type_params; shape; loc }
       in
       let env = Env.with_type_declaration env type_name constructor in
       Ok env)

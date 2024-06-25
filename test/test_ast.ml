@@ -11,9 +11,10 @@ let%expect_test "experiment" =
         { name = tn_int
         ; type_params = []
         ; type_shape = Alias { desc = Intrinsic Int; loc = Span.dummy }
+        ; loc = Span.dummy
         }
     ; Intrinsic
-        { name = Ident.of_string "add"
+        { name = Located.dummy @@ Ident.of_string "add"
         ; intrinsic = Add_int
         ; type_ =
             { quantifiers = []
@@ -39,6 +40,7 @@ let%expect_test "experiment" =
         ; type_shape =
             Variant
               { constructors = [ Located.dummy (Constructor.of_string "Unit"), None ] }
+        ; loc = Span.dummy
         }
     ; Type_declaration
         { name = Located.dummy (Type_name.of_string "option")
@@ -51,6 +53,7 @@ let%expect_test "experiment" =
                     , Some { desc = Var "'a"; loc = Span.dummy } )
                   ]
               }
+        ; loc = Span.dummy
         }
     ; Let
         { name = Ident.of_string "x"

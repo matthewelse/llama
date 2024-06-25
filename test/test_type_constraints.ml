@@ -39,14 +39,18 @@ let%expect_test "option pattern" =
              ; id = Type.Id.create ()
              }
        ; args = [ arg ]
+       ; loc = Span.dummy
        })
   in
   let v = Type.Var.create () in
   print_s [%message "variable we care about:" (v : Type.Var.t)];
   test_pattern
-    (Construct
-       ( Located.dummy (Constructor.of_string "Some")
-       , Some (Var (Located.dummy (Ident.of_string "x"))) ))
+    { desc =
+        Construct
+          ( Located.dummy (Constructor.of_string "Some")
+          , Some { desc = Var (Located.dummy (Ident.of_string "x")); loc = Span.dummy } )
+    ; loc = Span.dummy
+    }
     (Type.Var v)
     ~env;
   [%expect
@@ -56,12 +60,14 @@ let%expect_test "option pattern" =
       Same_type
       (Var 1)
       (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 2)))
-      ((
-        Pattern_should_have_type
-        (Construct (
-          ((value Some) (loc (:0:-1 :0:-1)))
-          ((Var ((value x) (loc (:0:-1 :0:-1)))))))
-        (Var 1))))))
+      ((Pattern_should_have_type
+         ((loc (:0:-1 :0:-1))
+          (desc (
+            Construct (
+              ((value Some) (loc (:0:-1 :0:-1)))
+              (((loc (:0:-1 :0:-1)) (desc (Var ((value x) (loc (:0:-1 :0:-1)))))))))))
+         (Var 1))
+       ()))))
     |}]
 ;;
 
@@ -89,6 +95,7 @@ let%expect_test "option match" =
                 ; id = Type.Id.create ()
                 }
           ; args = [ arg ]
+          ; loc = Span.dummy
           }))
       x
       (Type.Poly.mono (Var (Type.Var.create ())))
@@ -96,9 +103,14 @@ let%expect_test "option match" =
   print_s [%message (env : Env.t)];
   test_match
     { desc = Var (Ident.of_string "x"); loc = Span.dummy }
-    [ ( Construct
-          ( Located.dummy (Constructor.of_string "Some")
-          , Some (Var (Located.dummy (Ident.of_string "y"))) )
+    [ ( { desc =
+            Construct
+              ( Located.dummy (Constructor.of_string "Some")
+              , Some
+                  { desc = Var (Located.dummy (Ident.of_string "y")); loc = Span.dummy }
+              )
+        ; loc = Span.dummy
+        }
       , { desc = Var (Ident.of_string "y"); loc = Span.dummy } )
     ]
     ~env;
@@ -114,19 +126,22 @@ let%expect_test "option match" =
               (((value None) (loc (:0:-1 :0:-1))) ())
               (((value Some) (loc (:0:-1 :0:-1))) ((Var 1)))))
             (id 0)))
-          (args (1))))))
+          (args (1))
+          (loc (:0:-1 :0:-1))))))
       (constructors ((Some option)))
       (fields ())))
     (constraints ((
       Same_type
       (Var 0)
       (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 2)))
-      ((
-        Pattern_should_have_type
-        (Construct (
-          ((value Some) (loc (:0:-1 :0:-1)))
-          ((Var ((value y) (loc (:0:-1 :0:-1)))))))
-        (Var 0))))))
+      ((Pattern_should_have_type
+         ((loc (:0:-1 :0:-1))
+          (desc (
+            Construct (
+              ((value Some) (loc (:0:-1 :0:-1)))
+              (((loc (:0:-1 :0:-1)) (desc (Var ((value y) (loc (:0:-1 :0:-1)))))))))))
+         (Var 0))
+       ()))))
     |}]
 ;;
 
