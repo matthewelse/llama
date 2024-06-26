@@ -19,9 +19,11 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
   let open Result.Let_syntax in
   List.fold_result ast ~init:env ~f:(fun env structure_item ->
     match structure_item with
-    | Let { name; value } ->
-      if debug then print_endline [%string "======== typing %{name#Ident}"];
-      if debug then print_s [%message "type_ast" (name : Ident.t) (value : Expression.t)];
+    | Let { name; value; loc = _ } ->
+      if debug then print_endline [%string "======== typing %{name.value#Ident}"];
+      if debug
+      then
+        print_s [%message "type_ast" ~name:(name.value : Ident.t) (value : Expression.t)];
       let%bind ty, constraints = type_of_let_binding value env in
       if debug then print_s [%message (ty : Type.t) (constraints : Constraints.t)];
       let solver = Solver.create () in
@@ -30,10 +32,10 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
       let%bind ty = Solver.normalize_ty solver ty ~env in
       let ty = maybe_generalize_expression_type value ty ~env in
       if debug then print_s [%message (ty : Type.Poly.t)];
-      let env = Env.with_var env name ty in
+      let env = Env.with_var env name.value ty in
       if debug then print_s [%message (env : Env.t)];
       Ok env
-    | Intrinsic { name; type_; intrinsic = _ } ->
+    | Intrinsic { name; type_; intrinsic = _; loc = _ } ->
       (* Surprisingly, the actual intrinsic used isn't that important for type checking. We trust
          the type provided by the standard library. *)
       let type_ = Type.Poly.of_ast type_ ~var_mapping:String.Map.empty in

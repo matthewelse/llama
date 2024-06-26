@@ -66,16 +66,18 @@ end
 module Value_intrinsic = struct
   type t =
     { name : Ident.t Located.t
-    ; intrinsic : Intrinsic.Value.t
+    ; intrinsic : Intrinsic.Value.t Located.t
     ; type_ : Type.Poly.t
+    ; loc : Span.t
     }
   [@@deriving sexp_of]
 end
 
 module Let_binding = struct
   type t =
-    { name : Ident.t
+    { name : Ident.t Located.t
     ; value : Expression.t
+    ; loc : Span.t
     }
   [@@deriving sexp_of]
 end

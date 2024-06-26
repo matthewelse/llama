@@ -83,7 +83,7 @@ let structure_item :=
 (* Global variable declarations *)
 
 let let_binding ==
-  | "let" ; name = ident; "="; value = expression; option(";;"); { {Let_binding.name; value } }
+  | "let" ; name = located(ident); "="; value = expression; option(";;"); { { Let_binding.name; value; loc = $sloc } }
 
 (* Type declarations *)
 
@@ -131,8 +131,12 @@ let record_field :=
   | field_name = located(field_id); ":"; ~ = type_; { (field_name, type_) }
 
 let intrinsic_declaration :=
-  | "intrinsic"; name = located(ident); ":"; ~ = type_; "="; intrinsic_name = String; {
-    { Value_intrinsic.name; intrinsic = Intrinsic.Value.of_string intrinsic_name; type_ = Type.generalize type_ }
+  | "intrinsic"; name = located(ident); ":"; ~ = type_; "="; intrinsic_name = located(String); {
+    { Value_intrinsic.name
+    ; intrinsic = Located.map ~f:Intrinsic.Value.of_string intrinsic_name
+    ; type_ = Type.generalize type_
+    ; loc = $sloc
+    }
   }
 
 let base_type :=

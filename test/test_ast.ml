@@ -14,15 +14,16 @@ let%expect_test "experiment" =
         ; loc = Span.dummy
         }
     ; Intrinsic
-        { name = Located.dummy @@ Ident.of_string "add"
-        ; intrinsic = Add_int
+        { name = Located.dummy (Ident.of_string "add")
+        ; intrinsic = Located.dummy Intrinsic.Value.Add_int
         ; type_ =
             { quantifiers = []
             ; ty = { desc = Fun ([ ty_int; ty_int ], ty_int); loc = Span.dummy }
             }
+        ; loc = Span.dummy
         }
     ; Let
-        { name = Ident.of_string "x"
+        { name = Located.dummy (Ident.of_string "x")
         ; value =
             { desc =
                 Apply
@@ -33,6 +34,7 @@ let%expect_test "experiment" =
                       ] )
             ; loc = Span.dummy
             }
+        ; loc = Span.dummy
         }
     ; Type_declaration
         { name = Located.dummy (Type_name.of_string "unit")
@@ -56,14 +58,15 @@ let%expect_test "experiment" =
         ; loc = Span.dummy
         }
     ; Let
-        { name = Ident.of_string "x"
+        { name = Located.dummy (Ident.of_string "x")
         ; value =
             { desc = Construct (Located.dummy (Constructor.of_string "None"), None)
             ; loc = Span.dummy
             }
+        ; loc = Span.dummy
         }
     ; Let
-        { name = Ident.of_string "x"
+        { name = Located.dummy (Ident.of_string "x")
         ; value =
             { desc =
                 Construct
@@ -71,6 +74,7 @@ let%expect_test "experiment" =
                   , Some (Expression.const_int 10 ~loc:Span.dummy) )
             ; loc = Span.dummy
             }
+        ; loc = Span.dummy
         }
     ]
   in

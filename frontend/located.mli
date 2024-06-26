@@ -9,3 +9,4 @@ type 'a t =
 
 val dummy : 'a -> 'a t
 val value_equal : 'a t -> 'a t -> f:('a -> 'a -> bool) -> bool
+val map : 'a t -> f:('a -> 'b) -> 'b t

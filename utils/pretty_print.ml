@@ -290,18 +290,18 @@ let pp_type_shape formatter (shape : Ast.Type_shape.t) =
 
 let pp_structure_item formatter (item : Ast.Structure_item.t) =
   match item with
-  | Let { name; value } ->
+  | Let { name; value; loc = _ } ->
     Format.pp_print_string formatter "let ";
-    pp_ident formatter name;
+    pp_ident formatter name.value;
     Format.pp_print_string formatter " = ";
     pp_expr formatter value
-  | Intrinsic { name; intrinsic; type_ } ->
+  | Intrinsic { name; intrinsic; type_; loc = _ } ->
     Format.pp_print_string formatter "intrinsic ";
     pp_ident formatter name.value;
     Format.pp_print_string formatter " : ";
     pp_ast_polytype formatter type_;
     Format.pp_print_string formatter " = ";
-    pp_intrinsic formatter intrinsic
+    pp_intrinsic formatter intrinsic.value
   | Type_declaration { name = { value = name; _ }; type_params; type_shape; loc = _ } ->
     Format.pp_print_string formatter "type ";
     if not (List.is_empty type_params)

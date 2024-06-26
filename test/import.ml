@@ -4,6 +4,7 @@ include struct
   open Llama_common
   module Constructor = Constructor
   module Ident = Ident
+  module Intrinsic = Intrinsic
   module Type_name = Type_name
 end
 
