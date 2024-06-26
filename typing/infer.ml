@@ -24,12 +24,23 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
       if debug
       then
         print_s [%message "type_ast" ~name:(name.value : Ident.t) (value : Expression.t)];
+      let this_ty = Type.Var.create () in
+      let env =
+        Env.with_var env name.value { ty = Var this_ty; quantifiers = Type.Var.Set.empty }
+      in
       let%bind ty, constraints = type_of_let_binding value env in
       if debug then print_s [%message (ty : Type.t) (constraints : Constraints.t)];
       let solver = Solver.create () in
       let%bind env = Solver.solve solver constraints ~env in
       if debug then print_s [%message (solver : Solver.t)];
       let%bind ty = Solver.normalize_ty solver ty ~env in
+      (* FIXME: Is this reasonable? We're removing [name] to ensure that its type vars get
+         universally quantified.
+
+         I think so: https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system#Typing_rule
+         we treat [name] as a monotype inside [name], and a polytype afterwards. Seems
+         reasonable. *)
+      let env = Env.remove_var env name.value in
       let ty = maybe_generalize_expression_type value ty ~env in
       if debug then print_s [%message (ty : Type.Poly.t)];
       let env = Env.with_var env name.value ty in

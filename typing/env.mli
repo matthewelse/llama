@@ -41,3 +41,4 @@ val with_fields
 val with_type_declaration : t -> Type_name.t -> Type.Constructor.t -> t
 val with_var : t -> Ident.t -> Type.Poly.t -> t
 val with_vars : t -> (Ident.t * Type.Var.t) list -> t
+val remove_var : t -> Ident.t -> t

@@ -87,3 +87,4 @@ let with_vars t vars =
 ;;
 
 let with_var t name ty = { t with values = Map.set t.values ~key:name ~data:ty }
+let remove_var t name = { t with values = Map.remove t.values name }

@@ -82,9 +82,9 @@ let%expect_test "option" =
     (env (
       (values (
         (x (
-          (quantifiers (1))
+          (quantifiers (2))
           (ty (
-            Apply ((value option) (loc (<example>:2:4 <example>:2:40))) ((Var 1))))))
+            Apply ((value option) (loc (<example>:2:4 <example>:2:40))) ((Var 2))))))
         (y (
           (quantifiers ())
           (ty (
@@ -127,9 +127,9 @@ let%expect_test "list" =
     (env (
       (values (
         (x (
-          (quantifiers (1))
+          (quantifiers (2))
           (ty (
-            Apply ((value list) (loc (<example>:2:4 <example>:2:47))) ((Var 1))))))
+            Apply ((value list) (loc (<example>:2:4 <example>:2:47))) ((Var 2))))))
         (y (
           (quantifiers ())
           (ty (
@@ -411,16 +411,16 @@ let%expect_test "polymorphism" =
             ((value option) (loc (<example>:2:6 <example>:2:42)))
             ((Intrinsic Int))))))
         (hd (
-          (quantifiers (3))
+          (quantifiers (4))
           (ty (
             Fun
             ((
               Apply
               ((value list) (loc (<example>:7:10 <example>:7:13)))
-              ((Var 3))))
+              ((Var 4))))
             (Apply
               ((value option) (loc (<example>:2:6 <example>:2:42)))
-              ((Var 3)))))))
+              ((Var 4)))))))
         (x (
           (quantifiers ())
           (ty (
@@ -556,5 +556,62 @@ let%expect_test "don't allow different branches of a match statement to have dif
     3 │   type 'a list   = | Nil  | Cons of 'a * 'a list
       ┆                                             ^^^^ Types list and option are not equal.
     ──╯
+    |}]
+;;
+
+let%expect_test "recursive functions" =
+  test_fragment
+    {|
+  type 'a list = | Nil | Cons of 'a * 'a list
+
+  type int = "%int"
+  intrinsic add_int : int -> int -> int = "%add_int"
+
+  let len = fun (x) ->
+    match x with
+    | Nil -> 0
+    | Cons (_, tl) -> add_int (len (tl), 1)
+  |};
+  [%expect
+    {|
+    (env (
+      (values (
+        (add_int (
+          (quantifiers ())
+          (ty (
+            Fun
+            ((Apply ((value int) (loc (<example>:5:22 <example>:5:25))) ())
+             (Apply ((value int) (loc (<example>:5:29 <example>:5:32))) ()))
+            (Apply ((value int) (loc (<example>:5:36 <example>:5:39))) ())))))
+        (len (
+          (quantifiers (3))
+          (ty (
+            Fun
+            ((Apply ((value list) (loc (<example>:9:6 <example>:9:9))) ((Var 3))))
+            (Intrinsic Int)))))))
+      (type_declarations (
+        (int (
+          (shape (Alias (Intrinsic Int)))
+          (args ())
+          (loc (<example>:4:2 <example>:4:19))))
+        (list (
+          (shape (
+            Variant
+            (constructors (
+              (((value Nil) (loc (<example>:2:19 <example>:2:22))) ())
+              (((value Cons) (loc (<example>:2:25 <example>:2:29)))
+               ((
+                 Tuple (
+                   (Var 0)
+                   (Apply
+                     ((value list) (loc (<example>:2:41 <example>:2:45)))
+                     ((Var 0)))))))))
+            (id 0)))
+          (args (0))
+          (loc (<example>:2:2 <example>:2:45))))))
+      (constructors (
+        (Cons list)
+        (Nil  list)))
+      (fields ())))
     |}]
 ;;
