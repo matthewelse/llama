@@ -19,7 +19,7 @@ let iter_free_type_vars t ~f = iter_t_generic f t
 let exists_free_type_var t ~f =
   let exception Found in
   try
-    iter_free_type_vars t ~f:(fun v -> if f v then raise Found);
+    iter_free_type_vars t ~f:(fun v -> if f v then raise_notrace Found);
     false
   with
   | Found -> true
