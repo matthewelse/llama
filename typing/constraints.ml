@@ -378,7 +378,9 @@ and check_pattern (pattern : Pattern.t) expected_ty ~env : (t * Env.t, _) result
            "Constructor %{constructor_name.value#Constructor} does not expect an \
             argument, but one was provided."])
   | Tuple patterns ->
-    let type_vars = List.map patterns ~f:(fun pattern -> pattern, Type.Var.create ()) in
+    let type_vars =
+      List.map patterns.value ~f:(fun pattern -> pattern, Type.Var.create ())
+    in
     let%bind env, nested_constraints =
       List.fold_result
         type_vars

@@ -3,7 +3,7 @@ open! Import
 
 type desc =
   | Construct of (Constructor.t Located.t * t option)
-  | Tuple of t list
+  | Tuple of t list Located.t
   | Var of Ident.t Located.t
 
 and t =

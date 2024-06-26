@@ -51,7 +51,7 @@ let rec of_ast (t : Ast.Type.t) ~var_mapping =
   | Var v -> Var (Map.find_exn var_mapping v)
   | Apply (name, ts) -> Apply (name, List.map ts ~f:(of_ast ~var_mapping))
   | Fun (args, r) -> Fun (List.map args ~f:(of_ast ~var_mapping), of_ast r ~var_mapping)
-  | Tuple ts -> Tuple (List.map ts ~f:(of_ast ~var_mapping))
+  | Tuple ts -> Tuple (List.map ts.value ~f:(of_ast ~var_mapping))
   | Intrinsic i -> Intrinsic i
 ;;
 

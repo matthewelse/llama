@@ -12,7 +12,7 @@ module Type = struct
     | Intrinsic of Intrinsic.Type.t
     | Apply of (Type_name.t Located.t * t list)
     | Fun of (t list * t)
-    | Tuple of t list
+    | Tuple of t list Located.t
   [@@deriving sexp_of]
 
   module Poly = struct
@@ -34,7 +34,8 @@ module Type = struct
     | Fun (args, r) ->
       let acc = List.fold args ~init:acc ~f:(fun acc next -> free_type_vars next ~acc) in
       free_type_vars r ~acc
-    | Tuple ts -> List.fold ts ~init:acc ~f:(fun acc next -> free_type_vars next ~acc)
+    | Tuple ts ->
+      List.fold ts.value ~init:acc ~f:(fun acc next -> free_type_vars next ~acc)
   ;;
 
   let generalize t : Poly.t =

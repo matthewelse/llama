@@ -148,8 +148,8 @@ let base_type :=
 let inter_type :=
   | ~ = base_type; "*"; ~ = inter_type; {
     match (inter_type : Type.t) with
-    | { desc = Tuple elems; _ } -> { inter_type with desc = Tuple (base_type :: elems) }
-    | _ -> { Type.desc = Tuple([ base_type; inter_type ]); loc = $sloc }
+    | { desc = Tuple elems; _ } -> { inter_type with desc = Tuple { value = base_type :: elems.value; loc = $sloc } }
+    | _ -> { Type.desc = Tuple { value = [ base_type; inter_type ]; loc = $sloc }; loc = $sloc }
   }
   | ~ = base_type; { base_type }
 
@@ -207,7 +207,7 @@ let pattern_desc :=
   | constructor = located(constructor_name); { Pattern.Construct (constructor, None) }
   | ~ = located(ident); <Pattern.Var>
   | "("; ~ = pattern_desc; ")"; { pattern_desc }
-  | "("; fst = pattern; ","; args = separated_nonempty_list(",", pattern); ")"; { Pattern.Tuple (fst :: args) }
+  | "("; fst = pattern; ","; args = separated_nonempty_list(",", pattern); ")"; { Pattern.Tuple { value = fst :: args; loc = $sloc } }
 
 let pattern :=
   | pattern = pattern_desc; { { Pattern.desc = pattern; loc = $sloc } }

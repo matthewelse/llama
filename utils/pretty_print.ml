@@ -115,7 +115,7 @@ let rec pp_ast_type formatter (ty : Ast.Type.t) =
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " * ")
       pp_ast_type
       formatter
-      ts;
+      ts.value;
     Format.pp_print_char formatter ')'
   | Intrinsic i ->
     Format.pp_print_char formatter '"';
@@ -160,7 +160,7 @@ let rec pp_pattern formatter (pattern : Pattern.t) =
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
       pp_pattern
       formatter
-      patterns;
+      patterns.value;
     Format.pp_print_char formatter ')'
 ;;
 
