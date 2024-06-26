@@ -13,28 +13,23 @@ let type_of_let_binding expr env =
   Ok (ty, constraints)
 ;;
 
-let debug = false
-
 let type_ast ?(env = Env.empty) (ast : Ast.t) =
   let open Result.Let_syntax in
   List.fold_result ast ~init:env ~f:(fun env structure_item ->
     match structure_item with
     | Let { name; value; loc = _ } ->
-      if debug then print_endline [%string "======== typing %{name.value#Ident}"];
-      if debug
-      then
-        print_s [%message "type_ast" ~name:(name.value : Ident.t) (value : Expression.t)];
-      let this_ty = Type.Var.create () in
+      (* Assume that [name] is recursive. Create a fresh type variable to represent the type of
+         this value. *)
       let env =
+        let this_ty = Type.Var.create () in
         Env.with_var env name.value { ty = Var this_ty; quantifiers = Type.Var.Set.empty }
       in
       let%bind ty, constraints = type_of_let_binding value env in
-      if debug then print_s [%message (ty : Type.t) (constraints : Constraints.t)];
+      (* Solve the constraints we've generated. *)
       let solver = Solver.create () in
       let%bind env = Solver.solve solver constraints ~env in
-      if debug then print_s [%message (solver : Solver.t)];
       let%bind ty = Solver.normalize_ty solver ty ~env in
-      (* FIXME: Is this reasonable? We're removing [name] to ensure that its type vars get
+      (* FIXME melse: Is this reasonable? We're removing [name] to ensure that its type vars get
          universally quantified.
 
          I think so: https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system#Typing_rule
@@ -42,9 +37,7 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
          reasonable. *)
       let env = Env.remove_var env name.value in
       let ty = maybe_generalize_expression_type value ty ~env in
-      if debug then print_s [%message (ty : Type.Poly.t)];
       let env = Env.with_var env name.value ty in
-      if debug then print_s [%message (env : Env.t)];
       Ok env
     | Intrinsic { name; type_; intrinsic = _; loc = _ } ->
       (* Surprisingly, the actual intrinsic used isn't that important for type checking. We trust
