@@ -39,6 +39,9 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
       let type_ = Type.Poly.of_ast type_ ~var_mapping:String.Map.empty in
       let env = Env.with_var env name.value type_ in
       Ok env
+    | Type_class_declaration _ ->
+      (* TODO melse: implement me! *)
+      Ok env
     | Type_declaration { name = { value = type_name; _ }; type_params; type_shape; loc }
       ->
       let type_params =

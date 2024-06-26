@@ -5,6 +5,7 @@ include struct
   module Constructor = Constructor
   module Ident = Ident
   module Intrinsic = Intrinsic
+  module Type_class_name = Type_class_name
   module Type_name = Type_name
 end
 

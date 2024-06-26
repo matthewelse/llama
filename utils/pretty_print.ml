@@ -302,6 +302,28 @@ let pp_structure_item formatter (item : Ast.Structure_item.t) =
     pp_ast_polytype formatter type_;
     Format.pp_print_string formatter " = ";
     pp_intrinsic formatter intrinsic.value
+  | Type_class_declaration { name; args; functions } ->
+    let args = List.map args ~f:Located.value |> String.concat ~sep:", " in
+    Format.pp_print_string
+      formatter
+      [%string "class %{name.value#Type_class_name} (%{args}) : sig"];
+    Format.pp_print_newline formatter ();
+    Format.pp_print_list
+      ~pp_sep:Format.pp_print_newline
+      (fun formatter
+        { Ast.Type_class_declaration.Function_decl.name; arg_types; return_type } ->
+        Format.pp_print_string formatter [%string "  val %{name.value#Ident} : "];
+        Format.pp_print_list
+          ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " -> ")
+          pp_ast_type
+          formatter
+          arg_types;
+        Format.pp_print_string formatter [%string " -> "];
+        pp_ast_type formatter return_type)
+      formatter
+      functions;
+    Format.pp_print_newline formatter ();
+    Format.pp_print_string formatter "end"
   | Type_declaration { name = { value = name; _ }; type_params; type_shape; loc = _ } ->
     Format.pp_print_string formatter "type ";
     if not (List.is_empty type_params)

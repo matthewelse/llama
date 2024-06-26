@@ -83,10 +83,29 @@ module Let_binding = struct
   [@@deriving sexp_of]
 end
 
+module Type_class_declaration = struct
+  module Function_decl = struct
+    type t =
+      { name : Ident.t Located.t (* TODO: constraints *)
+      ; arg_types : Type.t list
+      ; return_type : Type.t
+      }
+    [@@deriving sexp_of]
+  end
+
+  type t =
+    { name : Type_class_name.t Located.t
+    ; args : string Located.t list
+    ; functions : Function_decl.t list
+    }
+  [@@deriving sexp_of]
+end
+
 module Structure_item = struct
   type t =
     | Let of Let_binding.t
     | Intrinsic of Value_intrinsic.t
+    | Type_class_declaration of Type_class_declaration.t
     | Type_declaration of Type_declaration.t
   [@@deriving sexp_of]
 end

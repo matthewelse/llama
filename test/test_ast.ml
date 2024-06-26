@@ -90,29 +90,3 @@ let%expect_test "experiment" =
     let x = Some (10)
     |}]
 ;;
-(* let results = Infer.type_ast ast |> ok_exn in
-   print_s [%message (results : Infer.Env.t)];
-   [%expect
-    {|
-    (results (
-      (values (
-        (add (
-          (quantifiers ())
-          (ty (
-            Fun
-            ((Apply int ())
-             (Apply int ()))
-            (Apply int ())))))
-        (x ((quantifiers ()) (ty (Apply option ((Intrinsic Int))))))))
-      (type_declarations (
-        (int ((shape (Alias (Intrinsic Int))) (args ())))
-        (option (
-          (shape (Variant (constructors ((None ()) (Some ((Var 1))))) (id 1)))
-          (args (1))))
-        (unit ((shape (Variant (constructors ((Unit ()))) (id 0))) (args ())))))
-      (constructors (
-        (None option)
-        (Some option)
-        (Unit unit)))
-      (fields ())))
-    |}]*)
