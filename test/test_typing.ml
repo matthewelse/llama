@@ -2,19 +2,44 @@ open! Core
 open! Import
 module Env = Llama_typing.Env
 
+let parse_with_error_reporting code ~pp_ast =
+  let lexbuf = Lexing.from_string code in
+  Lexing.set_filename lexbuf "<example>";
+  match Llama_frontend.Parser.program Llama_frontend.Lexer.read lexbuf with
+  | exception Llama_frontend.Parser.Error n ->
+    let error_output =
+      Diagnostics.create
+        ~code
+        ~message:"Syntax error"
+        ~error_code:[%string "E%{n#Int}"]
+        ~error_offset:(Lexing.lexeme_start_p lexbuf)
+        ~labels:
+          { primary =
+              { span = Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf
+              ; message = Llama_frontend.Errors.message n |> String.rstrip
+              }
+          ; secondary = []
+          }
+        Error
+    in
+    Diagnostics.render error_output Format.err_formatter;
+    Error ()
+  | ast ->
+    if pp_ast then Pretty_print.pp_ast Format.std_formatter ast;
+    Ok ast
+;;
+
 let test_fragment ?(pp_ast = false) code =
   Type.Var.For_testing.reset_counter ();
   Type.Id.For_testing.reset_counter ();
-  let ast =
-    let lexbuf = Lexing.from_string code in
-    Lexing.set_filename lexbuf "<example>";
-    let ast = Llama_frontend.Parser.program Llama_frontend.Lexer.read lexbuf in
-    if pp_ast then Pretty_print.pp_ast Format.std_formatter ast;
-    ast
-  in
+  (ignore : (unit, unit) result -> unit)
+  @@
+  let%bind.Result ast = parse_with_error_reporting code ~pp_ast in
   let result = Llama_typing.Infer.type_ast ast in
   match result with
-  | Ok env -> print_s [%message (env : Env.t)]
+  | Ok env ->
+    print_s [%message (env : Env.t)];
+    Ok ()
   | Error { primary_location; message } ->
     let error_output =
       Diagnostics.create
@@ -25,7 +50,8 @@ let test_fragment ?(pp_ast = false) code =
         ~labels:{ primary = { span = primary_location; message }; secondary = [] }
         Error
     in
-    Diagnostics.render error_output Format.err_formatter
+    Diagnostics.render error_output Format.err_formatter;
+    Ok ()
 ;;
 
 let%expect_test "int" =
@@ -501,5 +527,34 @@ let%expect_test "don't allow a ref to be set to two different types" =
     12 │     let a = set_ref (y, Some 10) in
        ┆                         ^^^^^^^ Failed to unify types (got option, expected %int)
     ───╯
+    |}]
+;;
+
+let%expect_test "don't allow different branches of a match statement to have different \
+                 types"
+  =
+  test_fragment
+    {|
+  type 'a option = | None | Some of 'a
+  type 'a list   = | Nil  | Cons of 'a * 'a list
+
+  let hd_tl = fun (l) ->
+    match l with
+    | Nil -> (None, None)
+    | Cons (x, y) -> (Some x, y)
+  |};
+  (* FIXME: error should look like
+
+     {v
+| Cons (x, y) -> (Some x, y)
+                          ^ Types list and option are not equal.
+     v}*)
+  [%expect
+    {|
+    error[EXXXX]: Type Error
+      ╭─[<example>:3:44]
+    3 │   type 'a list   = | Nil  | Cons of 'a * 'a list
+      ┆                                             ^^^^ Types list and option are not equal.
+    ──╯
     |}]
 ;;

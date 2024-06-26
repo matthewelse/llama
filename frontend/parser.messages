@@ -16,7 +16,7 @@ program: Type While
 ##
 ## structure_item -> Type . Ident Equal type_desc [ Type Let Intrinsic Eof ]
 ## structure_item -> Type . Type_var Ident Equal type_desc [ Type Let Intrinsic Eof ]
-## structure_item -> Type . Lparen separated_nonempty_list(Comma,Type_var) Rparen Ident Equal type_desc [ Type Let Intrinsic Eof ]
+## structure_item -> Type . Lparen separated_nonempty_list(Comma,located(Type_var)) Rparen Ident Equal type_desc [ Type Let Intrinsic Eof ]
 ##
 ## The known suffix of the stack is as follows:
 ## Type
@@ -142,7 +142,7 @@ Expected a type.
 
 program: Intrinsic Ident While
 ##
-## Ends in an error in state: 126.
+## Ends in an error in state: 128.
 ##
 ## intrinsic_declaration -> Intrinsic Ident . Colon type_ Equal String [ Type Let Intrinsic Eof ]
 ##
@@ -152,7 +152,32 @@ program: Intrinsic Ident While
 
 Expected `:`.
 
-program: Intrinsic Ident Colon Ident Arrow While
+program: Let Ident Equal Fun With
+##
+## Ends in an error in state: 67.
+##
+## one_expression -> Fun . Lparen loption(separated_nonempty_list(Comma,ident)) Rparen Arrow expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Fun
+##
+
+Expected `(` after `fun` in function definition.
+
+program: Intrinsic Ident Colon Type_var With
+##
+## Ends in an error in state: 10.
+##
+## base_type -> Type_var . [ Type Star Semicolon Rparen Rbrace Pipe Let Intrinsic Equal Eof Arrow ]
+## base_type -> Type_var . Ident [ Type Star Semicolon Rparen Rbrace Pipe Let Intrinsic Equal Eof Arrow ]
+##
+## The known suffix of the stack is as follows:
+## Type_var
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Intrinsic Ident Colon Ident Arrow With
 ##
 ## Ends in an error in state: 17.
 ##
@@ -160,6 +185,18 @@ program: Intrinsic Ident Colon Ident Arrow While
 ##
 ## The known suffix of the stack is as follows:
 ## inter_type Arrow
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Intrinsic Ident Colon Ident Star With
+##
+## Ends in an error in state: 20.
+##
+## inter_type -> base_type Star . inter_type [ Type Semicolon Rparen Rbrace Pipe Let Intrinsic Equal Eof Arrow ]
+##
+## The known suffix of the stack is as follows:
+## base_type Star
 ##
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
@@ -185,7 +222,7 @@ program: Type Ident Equal Lbrace Ident Colon Ident Type
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Ident Equal Lbrace Ident Colon Ident Semicolon While
+program: Type Ident Equal Lbrace Ident Colon Ident Semicolon With
 ##
 ## Ends in an error in state: 26.
 ##
@@ -197,7 +234,7 @@ program: Type Ident Equal Lbrace Ident Colon Ident Semicolon While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Ident Equal Pipe While
+program: Type Ident Equal Pipe With
 ##
 ## Ends in an error in state: 31.
 ##
@@ -209,7 +246,7 @@ program: Type Ident Equal Pipe While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Ident Equal Constructor While
+program: Type Ident Equal Constructor With
 ##
 ## Ends in an error in state: 32.
 ##
@@ -222,7 +259,7 @@ program: Type Ident Equal Constructor While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Ident Equal Constructor Of While
+program: Type Ident Equal Constructor Of With
 ##
 ## Ends in an error in state: 33.
 ##
@@ -255,7 +292,7 @@ program: Type Ident Equal Constructor Of Ident Semicolon
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Ident Equal Constructor Pipe While
+program: Type Ident Equal Constructor Pipe With
 ##
 ## Ends in an error in state: 38.
 ##
@@ -267,11 +304,11 @@ program: Type Ident Equal Constructor Pipe While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Lparen While
+program: Type Lparen With
 ##
 ## Ends in an error in state: 40.
 ##
-## structure_item -> Type Lparen . separated_nonempty_list(Comma,Type_var) Rparen Ident Equal type_desc [ Type Let Intrinsic Eof ]
+## structure_item -> Type Lparen . separated_nonempty_list(Comma,located(Type_var)) Rparen Ident Equal type_desc [ Type Let Intrinsic Eof ]
 ##
 ## The known suffix of the stack is as follows:
 ## Type Lparen
@@ -279,12 +316,12 @@ program: Type Lparen While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Lparen Type_var While
+program: Type Lparen Type_var With
 ##
 ## Ends in an error in state: 41.
 ##
-## separated_nonempty_list(Comma,Type_var) -> Type_var . [ Rparen ]
-## separated_nonempty_list(Comma,Type_var) -> Type_var . Comma separated_nonempty_list(Comma,Type_var) [ Rparen ]
+## separated_nonempty_list(Comma,located(Type_var)) -> Type_var . [ Rparen ]
+## separated_nonempty_list(Comma,located(Type_var)) -> Type_var . Comma separated_nonempty_list(Comma,located(Type_var)) [ Rparen ]
 ##
 ## The known suffix of the stack is as follows:
 ## Type_var
@@ -292,11 +329,11 @@ program: Type Lparen Type_var While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Lparen Type_var Comma While
+program: Type Lparen Type_var Comma With
 ##
 ## Ends in an error in state: 42.
 ##
-## separated_nonempty_list(Comma,Type_var) -> Type_var Comma . separated_nonempty_list(Comma,Type_var) [ Rparen ]
+## separated_nonempty_list(Comma,located(Type_var)) -> Type_var Comma . separated_nonempty_list(Comma,located(Type_var)) [ Rparen ]
 ##
 ## The known suffix of the stack is as follows:
 ## Type_var Comma
@@ -304,43 +341,43 @@ program: Type Lparen Type_var Comma While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Lparen Type_var Rparen While
+program: Type Lparen Type_var Rparen With
 ##
 ## Ends in an error in state: 45.
 ##
-## structure_item -> Type Lparen separated_nonempty_list(Comma,Type_var) Rparen . Ident Equal type_desc [ Type Let Intrinsic Eof ]
+## structure_item -> Type Lparen separated_nonempty_list(Comma,located(Type_var)) Rparen . Ident Equal type_desc [ Type Let Intrinsic Eof ]
 ##
 ## The known suffix of the stack is as follows:
-## Type Lparen separated_nonempty_list(Comma,Type_var) Rparen
+## Type Lparen separated_nonempty_list(Comma,located(Type_var)) Rparen
 ##
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Lparen Type_var Rparen Ident While
+program: Type Lparen Type_var Rparen Ident With
 ##
 ## Ends in an error in state: 46.
 ##
-## structure_item -> Type Lparen separated_nonempty_list(Comma,Type_var) Rparen Ident . Equal type_desc [ Type Let Intrinsic Eof ]
+## structure_item -> Type Lparen separated_nonempty_list(Comma,located(Type_var)) Rparen Ident . Equal type_desc [ Type Let Intrinsic Eof ]
 ##
 ## The known suffix of the stack is as follows:
-## Type Lparen separated_nonempty_list(Comma,Type_var) Rparen Ident
+## Type Lparen separated_nonempty_list(Comma,located(Type_var)) Rparen Ident
 ##
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Lparen Type_var Rparen Ident Equal While
+program: Type Lparen Type_var Rparen Ident Equal With
 ##
 ## Ends in an error in state: 47.
 ##
-## structure_item -> Type Lparen separated_nonempty_list(Comma,Type_var) Rparen Ident Equal . type_desc [ Type Let Intrinsic Eof ]
+## structure_item -> Type Lparen separated_nonempty_list(Comma,located(Type_var)) Rparen Ident Equal . type_desc [ Type Let Intrinsic Eof ]
 ##
 ## The known suffix of the stack is as follows:
-## Type Lparen separated_nonempty_list(Comma,Type_var) Rparen Ident Equal
+## Type Lparen separated_nonempty_list(Comma,located(Type_var)) Rparen Ident Equal
 ##
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Ident While
+program: Type Ident With
 ##
 ## Ends in an error in state: 49.
 ##
@@ -352,7 +389,7 @@ program: Type Ident While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Ident Equal While
+program: Type Ident Equal With
 ##
 ## Ends in an error in state: 50.
 ##
@@ -364,7 +401,7 @@ program: Type Ident Equal While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Let While
+program: Let With
 ##
 ## Ends in an error in state: 52.
 ##
@@ -376,7 +413,7 @@ program: Let While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Let Ident While
+program: Let Ident With
 ##
 ## Ends in an error in state: 53.
 ##
@@ -388,7 +425,7 @@ program: Let Ident While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Let Ident Equal While
+program: Let Ident Equal With
 ##
 ## Ends in an error in state: 54.
 ##
@@ -400,207 +437,27 @@ program: Let Ident Equal While
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Let Ident Equal Lparen While
-##
-## Ends in an error in state: 57.
-##
-## one_expression -> Lparen . expression Rparen [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-## one_expression -> Lparen . expression Comma separated_nonempty_list(Comma,expression) Rparen [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Lparen
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Ident While
-##
-## Ends in an error in state: 65.
-##
-## one_expression -> Ident . [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-## one_expression -> Ident . Lparen loption(separated_nonempty_list(Comma,expression)) Rparen [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Ident
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Ident Lparen While
-##
-## Ends in an error in state: 66.
-##
-## one_expression -> Ident Lparen . loption(separated_nonempty_list(Comma,expression)) Rparen [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Ident Lparen
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Constructor While
-##
-## Ends in an error in state: 76.
-##
-## one_expression -> Constructor . expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-## one_expression -> Constructor . [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Constructor
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Ident Lparen Int While
-##
-## Ends in an error in state: 83.
-##
-## separated_nonempty_list(Comma,expression) -> expression . [ Rparen ]
-## separated_nonempty_list(Comma,expression) -> expression . Comma separated_nonempty_list(Comma,expression) [ Rparen ]
-##
-## The known suffix of the stack is as follows:
-## expression
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Ident Lparen Constructor Comma While
-##
-## Ends in an error in state: 84.
-##
-## separated_nonempty_list(Comma,expression) -> expression Comma . separated_nonempty_list(Comma,expression) [ Rparen ]
-##
-## The known suffix of the stack is as follows:
-## expression Comma
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Lparen Int While
-##
-## Ends in an error in state: 95.
-##
-## one_expression -> Lparen expression . Rparen [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-## one_expression -> Lparen expression . Comma separated_nonempty_list(Comma,expression) Rparen [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Lparen expression
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Lparen Constructor Comma While
-##
-## Ends in an error in state: 97.
-##
-## one_expression -> Lparen expression Comma . separated_nonempty_list(Comma,expression) Rparen [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Lparen expression Comma
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Intrinsic While
-##
-## Ends in an error in state: 125.
-##
-## intrinsic_declaration -> Intrinsic . Ident Colon type_ Equal String [ Type Let Intrinsic Eof ]
-##
-## The known suffix of the stack is as follows:
-## Intrinsic
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Intrinsic Ident Colon While
-##
-## Ends in an error in state: 127.
-##
-## intrinsic_declaration -> Intrinsic Ident Colon . type_ Equal String [ Type Let Intrinsic Eof ]
-##
-## The known suffix of the stack is as follows:
-## Intrinsic Ident Colon
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Intrinsic Ident Colon Ident Type
-##
-## Ends in an error in state: 128.
-##
-## intrinsic_declaration -> Intrinsic Ident Colon type_ . Equal String [ Type Let Intrinsic Eof ]
-##
-## The known suffix of the stack is as follows:
-## Intrinsic Ident Colon type_
-##
-## WARNING: This example involves spurious reductions.
-## This implies that, although the LR(1) items shown above provide an
-## accurate view of the past (what has been recognized so far), they
-## may provide an INCOMPLETE view of the future (what was expected next).
-## In state 19, spurious reduction of production inter_type -> base_type
-## In state 16, spurious reduction of production type_ -> inter_type
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Intrinsic Ident Colon Ident Equal While
-##
-## Ends in an error in state: 129.
-##
-## intrinsic_declaration -> Intrinsic Ident Colon type_ Equal . String [ Type Let Intrinsic Eof ]
-##
-## The known suffix of the stack is as follows:
-## Intrinsic Ident Colon type_ Equal
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Int While
-##
-## Ends in an error in state: 122.
-##
-## structure_item -> Let Ident Equal expression . option(DoubleSemicolon) [ Type Let Intrinsic Eof ]
-##
-## The known suffix of the stack is as follows:
-## Let Ident Equal expression
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Intrinsic Ident Colon Type_var With
-##
-## Ends in an error in state: 10.
-##
-## base_type -> Type_var . [ Type Star Semicolon Rparen Rbrace Pipe Let Intrinsic Equal Eof Arrow ]
-## base_type -> Type_var . Ident [ Type Star Semicolon Rparen Rbrace Pipe Let Intrinsic Equal Eof Arrow ]
-##
-## The known suffix of the stack is as follows:
-## Type_var
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Intrinsic Ident Colon Ident Star With
-##
-## Ends in an error in state: 20.
-##
-## inter_type -> base_type Star . inter_type [ Type Semicolon Rparen Rbrace Pipe Let Intrinsic Equal Eof Arrow ]
-##
-## The known suffix of the stack is as follows:
-## base_type Star
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
 program: Let Ident Equal Match With
 ##
 ## Ends in an error in state: 56.
 ##
-## one_expression -> Match . expression With option(Pipe) separated_nonempty_list(Pipe,match_case) [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Match . expression With option(Pipe) separated_nonempty_list(Pipe,match_case) [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
 ## Match
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Lparen With
+##
+## Ends in an error in state: 57.
+##
+## one_expression -> Lparen . expression Rparen [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Lparen . expression Comma separated_nonempty_list(Comma,expression) Rparen [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Lparen
 ##
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
@@ -609,7 +466,7 @@ program: Let Ident Equal Let With
 ##
 ## Ends in an error in state: 58.
 ##
-## one_expression -> Let . Ident Equal expression In expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Let . Ident Equal expression In expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
 ## Let
@@ -621,7 +478,7 @@ program: Let Ident Equal Let Ident With
 ##
 ## Ends in an error in state: 59.
 ##
-## one_expression -> Let Ident . Equal expression In expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Let Ident . Equal expression In expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
 ## Let Ident
@@ -633,7 +490,7 @@ program: Let Ident Equal Let Ident Equal With
 ##
 ## Ends in an error in state: 60.
 ##
-## one_expression -> Let Ident Equal . expression In expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Let Ident Equal . expression In expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
 ## Let Ident Equal
@@ -645,7 +502,7 @@ program: Let Ident Equal Lbrace With
 ##
 ## Ends in an error in state: 61.
 ##
-## one_expression -> Lbrace . separated_nonempty_list(Comma,expr_record_field) Rbrace [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Lbrace . separated_nonempty_list(Semicolon,expr_record_field) Rbrace [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
 ## Lbrace
@@ -657,7 +514,7 @@ program: Let Ident Equal Lbrace Ident With
 ##
 ## Ends in an error in state: 62.
 ##
-## expr_record_field -> Ident . Equal expression [ Rbrace Comma ]
+## expr_record_field -> Ident . Equal expression [ Semicolon Rbrace ]
 ##
 ## The known suffix of the stack is as follows:
 ## Ident
@@ -669,7 +526,7 @@ program: Let Ident Equal Lbrace Ident Equal With
 ##
 ## Ends in an error in state: 63.
 ##
-## expr_record_field -> Ident Equal . expression [ Rbrace Comma ]
+## expr_record_field -> Ident Equal . expression [ Semicolon Rbrace ]
 ##
 ## The known suffix of the stack is as follows:
 ## Ident Equal
@@ -677,221 +534,36 @@ program: Let Ident Equal Lbrace Ident Equal With
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Let Ident Equal Lbrace Ident Equal Int While
+program: Let Ident Equal Ident While
 ##
-## Ends in an error in state: 89.
+## Ends in an error in state: 65.
 ##
-## separated_nonempty_list(Comma,expr_record_field) -> expr_record_field . [ Rbrace ]
-## separated_nonempty_list(Comma,expr_record_field) -> expr_record_field . Comma separated_nonempty_list(Comma,expr_record_field) [ Rbrace ]
+## one_expression -> Ident . [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Ident . Lparen loption(separated_nonempty_list(Comma,expression)) Rparen [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
-## expr_record_field
+## Ident
 ##
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Let Ident Equal Let Ident Equal Int While
+program: Let Ident Equal Ident Lparen With
 ##
-## Ends in an error in state: 92.
+## Ends in an error in state: 66.
 ##
-## one_expression -> Let Ident Equal expression . In expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Ident Lparen . loption(separated_nonempty_list(Comma,expression)) Rparen [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
-## Let Ident Equal expression
+## Ident Lparen
 ##
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Let Ident Equal Constructor In With
-##
-## Ends in an error in state: 93.
-##
-## one_expression -> Let Ident Equal expression In . expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Let Ident Equal expression In
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Int While
-##
-## Ends in an error in state: 100.
-##
-## one_expression -> Match expression . With option(Pipe) separated_nonempty_list(Pipe,match_case) [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Match expression
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With With
-##
-## Ends in an error in state: 101.
-##
-## one_expression -> Match expression With . option(Pipe) separated_nonempty_list(Pipe,match_case) [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Match expression With
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Pipe With
-##
-## Ends in an error in state: 102.
-##
-## one_expression -> Match expression With option(Pipe) . separated_nonempty_list(Pipe,match_case) [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Match expression With option(Pipe)
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Lparen With
-##
-## Ends in an error in state: 103.
-##
-## pattern -> Lparen . pattern Rparen [ Rparen Comma Arrow ]
-## pattern -> Lparen . pattern Comma separated_nonempty_list(Comma,pattern) Rparen [ Rparen Comma Arrow ]
-##
-## The known suffix of the stack is as follows:
-## Lparen
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Constructor With
-##
-## Ends in an error in state: 105.
-##
-## pattern -> Constructor . pattern [ Rparen Comma Arrow ]
-## pattern -> Constructor . [ Rparen Comma Arrow ]
-##
-## The known suffix of the stack is as follows:
-## Constructor
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Lparen Ident With
-##
-## Ends in an error in state: 107.
-##
-## pattern -> Lparen pattern . Rparen [ Rparen Comma Arrow ]
-## pattern -> Lparen pattern . Comma separated_nonempty_list(Comma,pattern) Rparen [ Rparen Comma Arrow ]
-##
-## The known suffix of the stack is as follows:
-## Lparen pattern
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Lparen Constructor Comma With
-##
-## Ends in an error in state: 109.
-##
-## pattern -> Lparen pattern Comma . separated_nonempty_list(Comma,pattern) Rparen [ Rparen Comma Arrow ]
-##
-## The known suffix of the stack is as follows:
-## Lparen pattern Comma
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Lparen Constructor Comma Ident With
-##
-## Ends in an error in state: 112.
-##
-## separated_nonempty_list(Comma,pattern) -> pattern . [ Rparen ]
-## separated_nonempty_list(Comma,pattern) -> pattern . Comma separated_nonempty_list(Comma,pattern) [ Rparen ]
-##
-## The known suffix of the stack is as follows:
-## pattern
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Lparen Constructor Comma Constructor Comma With
-##
-## Ends in an error in state: 113.
-##
-## separated_nonempty_list(Comma,pattern) -> pattern Comma . separated_nonempty_list(Comma,pattern) [ Rparen ]
-##
-## The known suffix of the stack is as follows:
-## pattern Comma
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Ident With
-##
-## Ends in an error in state: 116.
-##
-## match_case -> pattern . Arrow expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## pattern
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Constructor Arrow With
-##
-## Ends in an error in state: 117.
-##
-## match_case -> pattern Arrow . expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## pattern Arrow
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Constructor Arrow Int While
-##
-## Ends in an error in state: 119.
-##
-## separated_nonempty_list(Pipe,match_case) -> match_case . [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-## separated_nonempty_list(Pipe,match_case) -> match_case . Pipe separated_nonempty_list(Pipe,match_case) [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## match_case
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Match Constructor With Constructor Arrow Constructor Pipe With
-##
-## Ends in an error in state: 120.
-##
-## separated_nonempty_list(Pipe,match_case) -> match_case Pipe . separated_nonempty_list(Pipe,match_case) [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## match_case Pipe
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Let Ident Equal Fun With
-##
-## Ends in an error in state: 67.
-##
-## one_expression -> Fun . Lparen loption(separated_nonempty_list(Comma,ident)) Rparen Arrow expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
-##
-## The known suffix of the stack is as follows:
-## Fun
-##
-
-Expected `(` after `fun` in function definition.
 
 program: Let Ident Equal Fun Lparen With
 ##
 ## Ends in an error in state: 68.
 ##
-## one_expression -> Fun Lparen . loption(separated_nonempty_list(Comma,ident)) Rparen Arrow expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Fun Lparen . loption(separated_nonempty_list(Comma,ident)) Rparen Arrow expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
 ## Fun Lparen
@@ -928,7 +600,7 @@ program: Let Ident Equal Fun Lparen Rparen With
 ##
 ## Ends in an error in state: 74.
 ##
-## one_expression -> Fun Lparen loption(separated_nonempty_list(Comma,ident)) Rparen . Arrow expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Fun Lparen loption(separated_nonempty_list(Comma,ident)) Rparen . Arrow expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
 ## Fun Lparen loption(separated_nonempty_list(Comma,ident)) Rparen
@@ -940,7 +612,7 @@ program: Let Ident Equal Fun Lparen Rparen Arrow With
 ##
 ## Ends in an error in state: 75.
 ##
-## one_expression -> Fun Lparen loption(separated_nonempty_list(Comma,ident)) Rparen Arrow . expression [ With Type Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Fun Lparen loption(separated_nonempty_list(Comma,ident)) Rparen Arrow . expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
 ##
 ## The known suffix of the stack is as follows:
 ## Fun Lparen loption(separated_nonempty_list(Comma,ident)) Rparen Arrow
@@ -948,9 +620,349 @@ program: Let Ident Equal Fun Lparen Rparen Arrow With
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
 
-program: Type Ident Equal Ident With
+program: Let Ident Equal Constructor While
+##
+## Ends in an error in state: 76.
+##
+## one_expression -> Constructor . expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Constructor . [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Constructor
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Ident Lparen Int While
+##
+## Ends in an error in state: 83.
+##
+## separated_nonempty_list(Comma,expression) -> expression . [ Rparen ]
+## separated_nonempty_list(Comma,expression) -> expression . Comma separated_nonempty_list(Comma,expression) [ Rparen ]
+##
+## The known suffix of the stack is as follows:
+## expression
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Ident Lparen Constructor Comma With
+##
+## Ends in an error in state: 84.
+##
+## separated_nonempty_list(Comma,expression) -> expression Comma . separated_nonempty_list(Comma,expression) [ Rparen ]
+##
+## The known suffix of the stack is as follows:
+## expression Comma
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Lbrace Ident Equal Int While
+##
+## Ends in an error in state: 89.
+##
+## separated_nonempty_list(Semicolon,expr_record_field) -> expr_record_field . [ Rbrace ]
+## separated_nonempty_list(Semicolon,expr_record_field) -> expr_record_field . Semicolon separated_nonempty_list(Semicolon,expr_record_field) [ Rbrace ]
+##
+## The known suffix of the stack is as follows:
+## expr_record_field
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Lbrace Ident Equal Constructor Semicolon With
+##
+## Ends in an error in state: 90.
+##
+## separated_nonempty_list(Semicolon,expr_record_field) -> expr_record_field Semicolon . separated_nonempty_list(Semicolon,expr_record_field) [ Rbrace ]
+##
+## The known suffix of the stack is as follows:
+## expr_record_field Semicolon
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Let Ident Equal Int While
+##
+## Ends in an error in state: 92.
+##
+## one_expression -> Let Ident Equal expression . In expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Let Ident Equal expression
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Let Ident Equal Constructor In With
+##
+## Ends in an error in state: 93.
+##
+## one_expression -> Let Ident Equal expression In . expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Let Ident Equal expression In
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Lparen Int While
+##
+## Ends in an error in state: 95.
+##
+## one_expression -> Lparen expression . Rparen [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## one_expression -> Lparen expression . Comma separated_nonempty_list(Comma,expression) Rparen [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Lparen expression
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Lparen Constructor Comma With
+##
+## Ends in an error in state: 97.
+##
+## one_expression -> Lparen expression Comma . separated_nonempty_list(Comma,expression) Rparen [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Lparen expression Comma
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Int While
+##
+## Ends in an error in state: 100.
+##
+## one_expression -> Match expression . With option(Pipe) separated_nonempty_list(Pipe,match_case) [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Match expression
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With With
+##
+## Ends in an error in state: 101.
+##
+## one_expression -> Match expression With . option(Pipe) separated_nonempty_list(Pipe,match_case) [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Match expression With
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Pipe With
+##
+## Ends in an error in state: 102.
+##
+## one_expression -> Match expression With option(Pipe) . separated_nonempty_list(Pipe,match_case) [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## Match expression With option(Pipe)
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Lparen With
+##
+## Ends in an error in state: 103.
+##
+## pattern_desc -> Lparen . pattern_desc Rparen [ Rparen Comma Arrow ]
+## pattern_desc -> Lparen . pattern Comma separated_nonempty_list(Comma,pattern) Rparen [ Rparen Comma Arrow ]
+##
+## The known suffix of the stack is as follows:
+## Lparen
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Constructor With
+##
+## Ends in an error in state: 105.
+##
+## pattern_desc -> Constructor . pattern [ Rparen Comma Arrow ]
+## pattern_desc -> Constructor . [ Rparen Comma Arrow ]
+##
+## The known suffix of the stack is as follows:
+## Constructor
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Lparen Ident With
+##
+## Ends in an error in state: 108.
+##
+## pattern -> pattern_desc . [ Comma ]
+## pattern_desc -> Lparen pattern_desc . Rparen [ Rparen Comma Arrow ]
+##
+## The known suffix of the stack is as follows:
+## Lparen pattern_desc
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Lparen Constructor Comma With
+##
+## Ends in an error in state: 111.
+##
+## pattern_desc -> Lparen pattern Comma . separated_nonempty_list(Comma,pattern) Rparen [ Rparen Comma Arrow ]
+##
+## The known suffix of the stack is as follows:
+## Lparen pattern Comma
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Lparen Constructor Comma Ident With
+##
+## Ends in an error in state: 114.
+##
+## separated_nonempty_list(Comma,pattern) -> pattern . [ Rparen ]
+## separated_nonempty_list(Comma,pattern) -> pattern . Comma separated_nonempty_list(Comma,pattern) [ Rparen ]
+##
+## The known suffix of the stack is as follows:
+## pattern
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Lparen Constructor Comma Constructor Comma With
+##
+## Ends in an error in state: 115.
+##
+## separated_nonempty_list(Comma,pattern) -> pattern Comma . separated_nonempty_list(Comma,pattern) [ Rparen ]
+##
+## The known suffix of the stack is as follows:
+## pattern Comma
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Ident With
+##
+## Ends in an error in state: 118.
+##
+## match_case -> pattern . Arrow expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## pattern
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Constructor Arrow With
+##
+## Ends in an error in state: 119.
+##
+## match_case -> pattern Arrow . expression [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## pattern Arrow
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Constructor Arrow Int While
+##
+## Ends in an error in state: 121.
+##
+## separated_nonempty_list(Pipe,match_case) -> match_case . [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+## separated_nonempty_list(Pipe,match_case) -> match_case . Pipe separated_nonempty_list(Pipe,match_case) [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## match_case
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Match Constructor With Constructor Arrow Constructor Pipe With
+##
+## Ends in an error in state: 122.
+##
+## separated_nonempty_list(Pipe,match_case) -> match_case Pipe . separated_nonempty_list(Pipe,match_case) [ With Type Semicolon Rparen Rbrace Pipe Let Intrinsic In Eof DoubleSemicolon Comma ]
+##
+## The known suffix of the stack is as follows:
+## match_case Pipe
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Let Ident Equal Int While
+##
+## Ends in an error in state: 124.
+##
+## structure_item -> Let Ident Equal expression . option(DoubleSemicolon) [ Type Let Intrinsic Eof ]
+##
+## The known suffix of the stack is as follows:
+## Let Ident Equal expression
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Intrinsic With
+##
+## Ends in an error in state: 127.
+##
+## intrinsic_declaration -> Intrinsic . Ident Colon type_ Equal String [ Type Let Intrinsic Eof ]
+##
+## The known suffix of the stack is as follows:
+## Intrinsic
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Intrinsic Ident Colon With
+##
+## Ends in an error in state: 129.
+##
+## intrinsic_declaration -> Intrinsic Ident Colon . type_ Equal String [ Type Let Intrinsic Eof ]
+##
+## The known suffix of the stack is as follows:
+## Intrinsic Ident Colon
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Intrinsic Ident Colon Ident Type
+##
+## Ends in an error in state: 130.
+##
+## intrinsic_declaration -> Intrinsic Ident Colon type_ . Equal String [ Type Let Intrinsic Eof ]
+##
+## The known suffix of the stack is as follows:
+## Intrinsic Ident Colon type_
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 19, spurious reduction of production inter_type -> base_type
+## In state 16, spurious reduction of production type_ -> inter_type
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Intrinsic Ident Colon Ident Equal With
 ##
 ## Ends in an error in state: 131.
+##
+## intrinsic_declaration -> Intrinsic Ident Colon type_ Equal . String [ Type Let Intrinsic Eof ]
+##
+## The known suffix of the stack is as follows:
+## Intrinsic Ident Colon type_ Equal
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+program: Type Ident Equal Ident With
+##
+## Ends in an error in state: 133.
 ##
 ## list(structure_item) -> structure_item . list(structure_item) [ Eof ]
 ##

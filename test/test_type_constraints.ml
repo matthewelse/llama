@@ -60,14 +60,15 @@ let%expect_test "option pattern" =
       Same_type
       (Var 1)
       (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 2)))
-      ((Pattern_should_have_type
-         ((loc (:0:-1 :0:-1))
-          (desc (
-            Construct (
-              ((value Some) (loc (:0:-1 :0:-1)))
-              (((loc (:0:-1 :0:-1)) (desc (Var ((value x) (loc (:0:-1 :0:-1)))))))))))
-         (Var 1))
-       ()))))
+      (::
+        (Pattern_should_have_type
+          ((loc (:0:-1 :0:-1))
+           (desc (
+             Construct (
+               ((value Some) (loc (:0:-1 :0:-1)))
+               (((loc (:0:-1 :0:-1)) (desc (Var ((value x) (loc (:0:-1 :0:-1)))))))))))
+          (Var 1))
+        ()))))
     |}]
 ;;
 
@@ -134,14 +135,15 @@ let%expect_test "option match" =
       Same_type
       (Var 0)
       (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 2)))
-      ((Pattern_should_have_type
-         ((loc (:0:-1 :0:-1))
-          (desc (
-            Construct (
-              ((value Some) (loc (:0:-1 :0:-1)))
-              (((loc (:0:-1 :0:-1)) (desc (Var ((value y) (loc (:0:-1 :0:-1)))))))))))
-         (Var 0))
-       ()))))
+      (::
+        (Pattern_should_have_type
+          ((loc (:0:-1 :0:-1))
+           (desc (
+             Construct (
+               ((value Some) (loc (:0:-1 :0:-1)))
+               (((loc (:0:-1 :0:-1)) (desc (Var ((value y) (loc (:0:-1 :0:-1)))))))))))
+          (Var 0))
+        ()))))
     |}]
 ;;
 

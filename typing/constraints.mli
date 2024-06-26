@@ -13,7 +13,7 @@ module Constraint : sig
 end
 
 module Annotations : sig
-  type t = Annotation.t * Annotation.t list [@@deriving sexp_of]
+  type t = ( :: ) of Annotation.t * Annotation.t list [@@deriving sexp_of]
 end
 
 type t [@@deriving sexp_of]

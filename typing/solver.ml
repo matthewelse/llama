@@ -7,7 +7,7 @@ type t = { vars : Type.t Union_find.t Type.Var.Table.t }
 
 let create () = { vars = Type.Var.Table.create () }
 
-let error ~annotations:((primary, _secondary) : Constraints.Annotations.t) message =
+let error ~annotations:(primary :: _ : Constraints.Annotations.t) message =
   let loc =
     match primary with
     | Expression_should_have_type (expr, _) -> expr.loc
