@@ -7,12 +7,6 @@ let maybe_generalize_expression_type expr ty ~(env : Env.t) =
   else Type.Poly.mono ty
 ;;
 
-let type_of_let_binding expr env =
-  let%bind.Result ty, constraints = Constraints.infer expr ~env in
-  (* FIXME melse: at some point we should generalize types. *)
-  Ok (ty, constraints)
-;;
-
 let type_ast ?(env = Env.empty) (ast : Ast.t) =
   let open Result.Let_syntax in
   List.fold_result ast ~init:env ~f:(fun env structure_item ->
@@ -24,7 +18,7 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
         let this_ty = Type.Var.create () in
         Env.with_var env name.value { ty = Var this_ty; quantifiers = Type.Var.Set.empty }
       in
-      let%bind ty, constraints = type_of_let_binding value env in
+      let%bind ty, constraints = Constraints.infer value ~env in
       (* Solve the constraints we've generated. *)
       let solver = Solver.create () in
       let%bind env = Solver.solve solver constraints ~env in
