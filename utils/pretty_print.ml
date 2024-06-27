@@ -66,7 +66,7 @@ let map_type_vars vars =
 ;;
 
 let pp_polytype formatter (ty : Type.Poly.t) =
-  let%tydi { quantifiers; ty } = ty in
+  let%tydi { quantifiers; ty; constraints } = ty in
   (* Union the free type variables of [ty] with [quantifiers] in case we don't use any of the
      quantifiers. *)
   let tvs = map_type_vars (Set.union (Type.free_type_vars ty) quantifiers) in
@@ -80,6 +80,22 @@ let pp_polytype formatter (ty : Type.Poly.t) =
       formatter
       quantifiers;
     Format.pp_print_string formatter ". ");
+  if not (List.is_empty constraints)
+  then (
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+      (fun formatter { Type.Constraint.type_class; args } ->
+        Format.pp_print_string formatter (Type_class_name.to_string type_class);
+        Format.pp_print_string formatter " (";
+        Format.pp_print_list
+          ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+          (pp_tv ~tvs)
+          formatter
+          args;
+        Format.pp_print_string formatter ")")
+      formatter
+      constraints;
+    Format.pp_print_string formatter " => ");
   pp_type' formatter ty ~tvs
 ;;
 
@@ -310,16 +326,9 @@ let pp_structure_item formatter (item : Ast.Structure_item.t) =
     Format.pp_print_newline formatter ();
     Format.pp_print_list
       ~pp_sep:Format.pp_print_newline
-      (fun formatter
-        { Ast.Type_class_declaration.Function_decl.name; arg_types; return_type } ->
+      (fun formatter { Ast.Type_class_declaration.Function_decl.name; ty } ->
         Format.pp_print_string formatter [%string "  val %{name.value#Ident} : "];
-        Format.pp_print_list
-          ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " -> ")
-          pp_ast_type
-          formatter
-          arg_types;
-        Format.pp_print_string formatter [%string " -> "];
-        pp_ast_type formatter return_type)
+        pp_ast_type formatter ty)
       formatter
       functions;
     Format.pp_print_newline formatter ();

@@ -55,17 +55,26 @@ let rec of_ast (t : Ast.Type.t) ~var_mapping =
   | Intrinsic i -> Intrinsic i
 ;;
 
+module Constraint = struct
+  type t =
+    { type_class : Type_class_name.t
+    ; args : Var.t list
+    }
+  [@@deriving sexp_of]
+end
+
 module Poly = struct
   type ty = t [@@deriving sexp_of]
 
   type t =
     { quantifiers : Var.Set.t
     ; ty : ty
+    ; constraints : Constraint.t list
     }
   [@@deriving sexp_of]
 
   let ty_subst = subst
-  let mono ty = { ty; quantifiers = Var.Set.empty }
+  let mono ty = { ty; quantifiers = Var.Set.empty; constraints = [] }
 
   let subst t ~(replacements : ty Var.Map.t) =
     assert (
@@ -95,13 +104,16 @@ module Poly = struct
       List.fold new_var_mappings ~init:var_mapping ~f:(fun acc (v, var) ->
         Map.set acc ~key:v ~data:var)
     in
-    { quantifiers = Var.Set.of_list quantifiers; ty = ty_of_ast ty ~var_mapping }
+    { quantifiers = Var.Set.of_list quantifiers
+    ; ty = ty_of_ast ty ~var_mapping
+    ; constraints = []
+    }
   ;;
 end
 
 let generalize (typ : t) ~(env : Poly.t Ident.Map.t) : Poly.t =
   let free_vars = Set.diff (free_type_vars typ) (Poly.env_free_type_vars env) in
-  { quantifiers = free_vars; ty = typ }
+  { quantifiers = free_vars; ty = typ; constraints = [] }
 ;;
 
 module Constructor = struct

@@ -10,6 +10,7 @@ type token =
   | Arrow
   | Assign
   | Break
+  | Class
   | Colon
   | Constructor of string
   | Comma
@@ -43,11 +44,13 @@ type token =
   | Rbracket
   | Rparen
   | Semicolon
+  | Sig
   | Slash
   | Star
   | Then
   | To
   | Type
+  | Val
   | Var
   | While
   | With

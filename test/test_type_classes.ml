@@ -18,13 +18,16 @@ let%expect_test "experiment" =
         ; args = [ Located.dummy "'a" ]
         ; functions =
             [ { name = Located.dummy (Ident.of_string "eq")
-              ; arg_types =
-                  [ { loc = Span.dummy; desc = Var "'a" }
-                  ; { loc = Span.dummy; desc = Var "'a" }
-                  ]
-              ; return_type =
-                  { loc = Span.dummy
-                  ; desc = Apply (Located.dummy (Type_name.of_string "bool"), [])
+              ; ty =
+                  { desc =
+                      Fun
+                        ( [ { loc = Span.dummy; desc = Var "'a" }
+                          ; { loc = Span.dummy; desc = Var "'a" }
+                          ]
+                        , { loc = Span.dummy
+                          ; desc = Apply (Located.dummy (Type_name.of_string "bool"), [])
+                          } )
+                  ; loc = Span.dummy
                   }
               }
             ]
@@ -38,5 +41,13 @@ let%expect_test "experiment" =
     class Eq ('a) : sig
       val eq : 'a -> 'a -> bool
     end
-    |}]
+    |}];
+  let tv = Type.Var.create () in
+  Pretty_print.pp_polytype
+    Format.std_formatter
+    { ty = Fun ([ Var tv; Var tv ], Intrinsic Bool)
+    ; quantifiers = Type.Var.Set.singleton tv
+    ; constraints = [ { type_class = Type_class_name.of_string "Eq"; args = [ tv ] } ]
+    };
+  [%expect {| 'a. Eq ('a) => 'a -> 'a -> "%bool" |}]
 ;;

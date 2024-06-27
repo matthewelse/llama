@@ -68,6 +68,9 @@ rule read =
   | "intrinsic" { Intrinsic }
   | "match"  { Match }
   | "with"   { With }
+  | "class"  { Class }
+  | "sig"    { Sig }
+  | "val"    { Val }
   | id       { Ident (Lexing.lexeme lexbuf)}
   | constructor { Constructor (Lexing.lexeme lexbuf)}
   | int      { Int (Lexing.lexeme lexbuf) }

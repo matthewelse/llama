@@ -87,8 +87,7 @@ module Type_class_declaration = struct
   module Function_decl = struct
     type t =
       { name : Ident.t Located.t (* TODO: constraints *)
-      ; arg_types : Type.t list
-      ; return_type : Type.t
+      ; ty : Type.t
       }
     [@@deriving sexp_of]
   end

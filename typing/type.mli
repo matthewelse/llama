@@ -27,13 +27,22 @@ type t = Var.t t_generic [@@deriving sexp_of]
 
 val of_ast : Ast.Type.t -> var_mapping:Var.t String.Map.t -> t
 
+module Constraint : sig
+  type t =
+    { type_class : Type_class_name.t
+    ; args : Var.t list
+    }
+  [@@deriving sexp_of]
+end
+
 module Poly : sig
   type ty := t
 
-  (** forall [quantifiers]. [ty] *)
+  (** forall [quantifiers]. [constraints] => [ty] *)
   type t =
     { quantifiers : Var.Set.t
     ; ty : ty
+    ; constraints : Constraint.t list
     }
   [@@deriving sexp_of]
 

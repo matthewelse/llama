@@ -6,7 +6,7 @@
 let message =
   fun s ->
     match s with
-    | 133 ->
+    | 150 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"
     | 131 ->
         "<YOUR SYNTAX ERROR MESSAGE HERE>\n"

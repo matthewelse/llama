@@ -16,6 +16,7 @@ open Expression
 %token Arrow        "->"
 %token Assign       ":="
 %token Break        "break"
+%token Class        "class"
 %token Colon        ":"
 %token Comma        ","
 %token Do           "do"
@@ -48,11 +49,13 @@ open Expression
 %token Rparen       ")"
 %token Semicolon    ";"
 %token DoubleSemicolon ";;"
+%token Sig          "sig"
 %token Slash        "/"
 %token Star         "*"
 %token Then         "then"
 %token To           "to"
 %token Type         "type"
+%token Val          "val"
 %token Var          "var"
 %token While        "while"
 %token With         "with"
@@ -76,9 +79,10 @@ let program := ~ = list(structure_item); Eof; <>
 (* Declarations *)
 
 let structure_item :=
-  | ~ = type_declaration;      <Structure_item.Type_declaration>
-  | ~ = let_binding;           <Structure_item.Let>
   | ~ = intrinsic_declaration; <Structure_item.Intrinsic>
+  | ~ = let_binding;           <Structure_item.Let>
+  | ~ = type_class_declaration;<Structure_item.Type_class_declaration>
+  | ~ = type_declaration;      <Structure_item.Type_declaration>
 
 (* Global variable declarations *)
 
@@ -130,6 +134,8 @@ let record_fields == separated_nonempty_list(";", record_field)
 let record_field :=
   | field_name = located(field_id); ":"; ~ = type_; { (field_name, type_) }
 
+(* Intrinsic declaration *)
+
 let intrinsic_declaration :=
   | "intrinsic"; name = located(ident); ":"; ~ = type_; "="; intrinsic_name = located(String); {
     { Value_intrinsic.name
@@ -162,6 +168,22 @@ let type_ :=
            }
   }
   | ~ = inter_type; { inter_type }
+
+(* Type classes *)
+
+let type_class_declaration :=
+  | "class"; name = located(type_class_name); "("; args = separated_nonempty_list(",", located(Type_var)); ")"; ":"; "sig"; functions = list(type_class_sig); "end"; {
+    { Type_class_declaration.name
+    ; args
+    ; functions
+    }
+  }
+
+let type_class_name :=
+  | name = Constructor; <Type_class_name.of_string>
+
+let type_class_sig :=
+  | "val"; name = located(ident); ":"; ty = type_; { { Type_class_declaration.Function_decl.name; ty } }
 
 (* Expressions *)
 

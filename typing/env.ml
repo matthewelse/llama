@@ -81,7 +81,10 @@ let with_type_declaration t name ty =
 let with_vars t vars =
   let values =
     List.fold vars ~init:t.values ~f:(fun env (name, var) ->
-      Map.set env ~key:name ~data:{ ty = Var var; quantifiers = Type.Var.Set.empty })
+      Map.set
+        env
+        ~key:name
+        ~data:{ ty = Var var; quantifiers = Type.Var.Set.empty; constraints = [] })
   in
   { t with values }
 ;;

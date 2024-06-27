@@ -59,7 +59,7 @@ let%expect_test "int" =
   [%expect
     {|
     (env (
-      (values ((x ((quantifiers ()) (ty (Intrinsic Int))))))
+      (values ((x ((quantifiers ()) (ty (Intrinsic Int)) (constraints ())))))
       (type_declarations ())
       (constructors      ())
       (fields            ())))
@@ -84,13 +84,15 @@ let%expect_test "option" =
         (x (
           (quantifiers (2))
           (ty (
-            Apply ((value option) (loc (<example>:2:4 <example>:2:40))) ((Var 2))))))
+            Apply ((value option) (loc (<example>:2:4 <example>:2:40))) ((Var 2))))
+          (constraints ())))
         (y (
           (quantifiers ())
           (ty (
             Apply
             ((value option) (loc (<example>:2:4 <example>:2:40)))
-            ((Intrinsic Int))))))))
+            ((Intrinsic Int))))
+          (constraints ())))))
       (type_declarations ((
         option (
           (shape (
@@ -129,19 +131,22 @@ let%expect_test "list" =
         (x (
           (quantifiers (2))
           (ty (
-            Apply ((value list) (loc (<example>:2:4 <example>:2:47))) ((Var 2))))))
+            Apply ((value list) (loc (<example>:2:4 <example>:2:47))) ((Var 2))))
+          (constraints ())))
         (y (
           (quantifiers ())
           (ty (
             Apply
             ((value list) (loc (<example>:2:4 <example>:2:47)))
-            ((Intrinsic Int))))))
+            ((Intrinsic Int))))
+          (constraints ())))
         (z (
           (quantifiers ())
           (ty (
             Apply
             ((value list) (loc (<example>:2:4 <example>:2:47)))
-            ((Intrinsic Int))))))))
+            ((Intrinsic Int))))
+          (constraints ())))))
       (type_declarations ((
         list (
           (shape (
@@ -188,13 +193,15 @@ let%expect_test "list and options" =
           (ty (
             Apply
             ((value option) (loc (<example>:3:4 <example>:3:40)))
-            ((Intrinsic Int))))))
+            ((Intrinsic Int))))
+          (constraints ())))
         (x (
           (quantifiers ())
           (ty (
             Apply
             ((value list) (loc (<example>:2:4 <example>:2:47)))
-            ((Intrinsic Int))))))))
+            ((Intrinsic Int))))
+          (constraints ())))))
       (type_declarations (
         (list (
           (shape (
@@ -248,7 +255,8 @@ let%expect_test "tuple" =
             Tuple (
               (Apply ((value a) (loc (<example>:2:4 <example>:2:16))) ())
               (Apply ((value b) (loc (<example>:3:4 <example>:3:16))) ())
-              (Apply ((value c) (loc (<example>:4:4 <example>:4:16))) ()))))))))
+              (Apply ((value c) (loc (<example>:4:4 <example>:4:16))) ()))))
+          (constraints ())))))
       (type_declarations (
         (a (
           (shape (
@@ -288,8 +296,8 @@ let%expect_test "variables" =
     {|
     (env (
       (values (
-        (x ((quantifiers ()) (ty (Intrinsic Int))))
-        (y ((quantifiers ()) (ty (Intrinsic Int))))))
+        (x ((quantifiers ()) (ty (Intrinsic Int)) (constraints ())))
+        (y ((quantifiers ()) (ty (Intrinsic Int)) (constraints ())))))
       (type_declarations ())
       (constructors      ())
       (fields            ())))
@@ -316,10 +324,12 @@ let%expect_test "let _ = _ in _" =
             Fun
             ((Apply ((value int) (loc (<example>:3:22 <example>:3:25))) ())
              (Apply ((value int) (loc (<example>:3:29 <example>:3:32))) ()))
-            (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ())))))
+            (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ())))
+          (constraints ())))
         (y (
           (quantifiers ())
-          (ty (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ()))))))
+          (ty (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ()))
+          (constraints ())))))
       (type_declarations ((
         int (
           (shape (Alias (Intrinsic Int)))
@@ -355,17 +365,20 @@ let%expect_test "lambdas" =
             Fun
             ((Apply ((value int) (loc (<example>:3:22 <example>:3:25))) ())
              (Apply ((value int) (loc (<example>:3:29 <example>:3:32))) ()))
-            (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ())))))
+            (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ())))
+          (constraints ())))
         (add_twice (
           (quantifiers ())
           (ty (
             Fun
             ((Apply ((value int) (loc (<example>:3:22 <example>:3:25))) ())
              (Apply ((value int) (loc (<example>:3:29 <example>:3:32))) ()))
-            (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ())))))
+            (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ())))
+          (constraints ())))
         (y (
           (quantifiers ())
-          (ty (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ()))))))
+          (ty (Apply ((value int) (loc (<example>:3:36 <example>:3:39))) ()))
+          (constraints ())))))
       (type_declarations ((
         int (
           (shape (Alias (Intrinsic Int)))
@@ -409,7 +422,8 @@ let%expect_test "polymorphism" =
           (ty (
             Apply
             ((value option) (loc (<example>:2:6 <example>:2:42)))
-            ((Intrinsic Int))))))
+            ((Intrinsic Int))))
+          (constraints ())))
         (hd (
           (quantifiers (4))
           (ty (
@@ -420,13 +434,15 @@ let%expect_test "polymorphism" =
               ((Var 4))))
             (Apply
               ((value option) (loc (<example>:2:6 <example>:2:42)))
-              ((Var 4)))))))
+              ((Var 4)))))
+          (constraints ())))
         (x (
           (quantifiers ())
           (ty (
             Apply
             ((value option) (loc (<example>:2:6 <example>:2:42)))
-            ((Intrinsic Int))))))
+            ((Intrinsic Int))))
+          (constraints ())))
         (y (
           (quantifiers ())
           (ty (
@@ -435,13 +451,15 @@ let%expect_test "polymorphism" =
             ((
               Apply
               ((value option) (loc (<example>:2:6 <example>:2:42)))
-              ((Intrinsic Int))))))))
+              ((Intrinsic Int))))))
+          (constraints ())))
         (z (
           (quantifiers ())
           (ty (
             Apply
             ((value list) (loc (<example>:3:6 <example>:3:49)))
-            ((Intrinsic Int))))))))
+            ((Intrinsic Int))))
+          (constraints ())))))
       (type_declarations (
         (list (
           (shape (
@@ -582,13 +600,15 @@ let%expect_test "recursive functions" =
             Fun
             ((Apply ((value int) (loc (<example>:5:22 <example>:5:25))) ())
              (Apply ((value int) (loc (<example>:5:29 <example>:5:32))) ()))
-            (Apply ((value int) (loc (<example>:5:36 <example>:5:39))) ())))))
+            (Apply ((value int) (loc (<example>:5:36 <example>:5:39))) ())))
+          (constraints ())))
         (len (
           (quantifiers (3))
           (ty (
             Fun
             ((Apply ((value list) (loc (<example>:9:6 <example>:9:9))) ((Var 3))))
-            (Intrinsic Int)))))))
+            (Intrinsic Int)))
+          (constraints ())))))
       (type_declarations (
         (int (
           (shape (Alias (Intrinsic Int)))

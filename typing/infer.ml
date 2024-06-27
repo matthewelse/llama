@@ -16,7 +16,10 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
          this value. *)
       let env =
         let this_ty = Type.Var.create () in
-        Env.with_var env name.value { ty = Var this_ty; quantifiers = Type.Var.Set.empty }
+        Env.with_var
+          env
+          name.value
+          { ty = Var this_ty; quantifiers = Type.Var.Set.empty; constraints = [] }
       in
       let%bind ty, constraints = Constraints.infer value ~env in
       (* Solve the constraints we've generated. *)

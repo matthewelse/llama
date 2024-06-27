@@ -118,7 +118,7 @@ let%expect_test "option match" =
   [%expect
     {|
     (env (
-      (values ((x ((quantifiers ()) (ty (Var 0))))))
+      (values ((x ((quantifiers ()) (ty (Var 0)) (constraints ())))))
       (type_declarations ((
         option (
           (shape (
