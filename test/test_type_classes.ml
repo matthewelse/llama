@@ -4,13 +4,13 @@ open! Import
 let%expect_test "experiment" =
   Type.Id.For_testing.reset_counter ();
   Type.Var.For_testing.reset_counter ();
-  let tn_int = Located.dummy (Type_name.of_string "int") in
-  let _ty_int : Ast.Type.t = { desc = Apply (tn_int, []); loc = Span.dummy } in
+  let tn_bool = Located.dummy (Type_name.of_string "bool") in
+  let ty_bool : Ast.Type.t = { desc = Apply (tn_bool, []); loc = Span.dummy } in
   let ast : Ast.t =
     [ Type_declaration
-        { name = tn_int
+        { name = tn_bool
         ; type_params = []
-        ; type_shape = Alias { desc = Intrinsic Int; loc = Span.dummy }
+        ; type_shape = Alias { desc = Intrinsic Bool; loc = Span.dummy }
         ; loc = Span.dummy
         }
     ; Type_class_declaration
@@ -24,9 +24,7 @@ let%expect_test "experiment" =
                         ( [ { loc = Span.dummy; desc = Var "'a" }
                           ; { loc = Span.dummy; desc = Var "'a" }
                           ]
-                        , { loc = Span.dummy
-                          ; desc = Apply (Located.dummy (Type_name.of_string "bool"), [])
-                          } )
+                        , ty_bool )
                   ; loc = Span.dummy
                   }
               }
@@ -37,7 +35,7 @@ let%expect_test "experiment" =
   Pretty_print.pp_ast Format.std_formatter ast;
   [%expect
     {|
-    type int = "%int"
+    type bool = "%bool"
     class Eq ('a) : sig
       val eq : 'a -> 'a -> bool
     end
@@ -45,9 +43,10 @@ let%expect_test "experiment" =
   let tv = Type.Var.create () in
   Pretty_print.pp_polytype
     Format.std_formatter
-    { ty = Fun ([ Var tv; Var tv ], Intrinsic Bool)
+    { ty =
+        Fun ([ Var tv; Var tv ], Apply (Located.dummy @@ Type_name.of_string "bool", []))
     ; quantifiers = Type.Var.Set.singleton tv
     ; constraints = [ { type_class = Type_class_name.of_string "Eq"; args = [ tv ] } ]
     };
-  [%expect {| 'a. Eq ('a) => 'a -> 'a -> "%bool" |}]
+  [%expect {| 'a. Eq ('a) => 'a -> 'a -> bool |}]
 ;;
