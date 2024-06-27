@@ -3,15 +3,21 @@ open! Import
 
 let debug = false
 
-type t = { vars : Type.t Union_find.t Type.Var.Table.t }
+type t =
+  { vars : Type.t Union_find.t Type.Var.Table.t
+  ; constraints : Type.t list list Type_class_name.Table.t
+  }
 
-let create () = { vars = Type.Var.Table.create () }
+let create () =
+  { vars = Type.Var.Table.create (); constraints = Type_class_name.Table.create () }
+;;
 
 let error ~annotations:(primary :: _ : Constraints.Annotations.t) message =
   let loc =
     match primary with
     | Expression_should_have_type (expr, _) -> expr.loc
     | Pattern_should_have_type (pat, _) -> pat.loc
+    | Var_requires_type_class (ident, _) -> ident.loc
   in
   Type_error.error_string ~loc message
 ;;
@@ -187,7 +193,10 @@ let solve t (constraints : Constraints.t) ~(env : Env.t) =
   let open Result.Let_syntax in
   let%bind () =
     iter_result (Constraints.to_list constraints) ~f:(function
-      | Same_type (t1, t2, annotations) -> unify_ty_ty t t1 t2 ~env ~annotations)
+      | Same_type (t1, t2, annotations) -> unify_ty_ty t t1 t2 ~env ~annotations
+      | Implements_type_class (type_class, args, _annotations) ->
+        Hashtbl.add_multi t.constraints ~key:type_class ~data:args;
+        Ok ())
   in
   Ok
     { env with
@@ -198,4 +207,17 @@ let solve t (constraints : Constraints.t) ~(env : Env.t) =
           then print_s [%message "final normalization" (typ : Type.Poly.t) (ty : Type.t)];
           { typ with ty })
     }
+;;
+
+let constraints t ~env =
+  Hashtbl.to_alist t.constraints
+  |> List.sort ~compare:[%compare: Type_class_name.t * _]
+  |> List.map ~f:(fun (name, constraints) ->
+    let%bind.Result constraints =
+      List.map constraints ~f:(fun typs ->
+        List.map typs ~f:(normalize_ty t ~env) |> Result.all)
+      |> Result.all
+    in
+    Ok (name, constraints))
+  |> Result.all
 ;;

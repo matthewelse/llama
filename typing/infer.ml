@@ -34,7 +34,18 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
          reasonable. *)
       let env = Env.remove_var env name.value in
       let ty = maybe_generalize_expression_type value ty ~env in
-      let env = Env.with_var env name.value ty in
+      let%bind constraints = Solver.constraints solver ~env in
+      let env =
+        Env.with_var
+          env
+          name.value
+          { ty with
+            constraints =
+              List.concat_map constraints ~f:(fun (type_class, constraints) ->
+                List.map constraints ~f:(fun args : Type.Constraint.t ->
+                  { type_class; args }))
+          }
+      in
       Ok env
     | Intrinsic { name; type_; intrinsic = _; loc = _ } ->
       (* Surprisingly, the actual intrinsic used isn't that important for type checking. We trust
@@ -42,8 +53,30 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
       let type_ = Type.Poly.of_ast type_ ~var_mapping:String.Map.empty in
       let env = Env.with_var env name.value type_ in
       Ok env
-    | Type_class_declaration _ ->
+    | Type_class_declaration { name = type_class_name; args; functions } ->
       (* TODO melse: implement me! *)
+      let env =
+        List.fold functions ~init:env ~f:(fun env { name; ty } ->
+          let type_params =
+            List.map (Ast.Type.free_type_vars ty ~acc:[]) ~f:(fun name ->
+              name, Type.Var.create ())
+          in
+          let var_mapping =
+            String.Map.of_alist_reduce type_params ~f:(fun _ most_recent -> most_recent)
+          in
+          let args =
+            List.map args ~f:(fun arg -> Type.Var (Map.find_exn var_mapping arg.value))
+          in
+          let ty = Type.of_ast ty ~var_mapping in
+          Env.with_var
+            env
+            name.value
+            Type.Poly.
+              { ty
+              ; quantifiers = Type.free_type_vars ty
+              ; constraints = [ { type_class = type_class_name.value; args } ]
+              })
+      in
       Ok env
     | Type_declaration { name = { value = type_name; _ }; type_params; type_shape; loc }
       ->

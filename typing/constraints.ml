@@ -5,11 +5,15 @@ module Annotation = struct
   type t =
     | Expression_should_have_type of Expression.t * Type.t
     | Pattern_should_have_type of Pattern.t * Type.t
+    | Var_requires_type_class of Ident.t Located.t * Type_class_name.t
   [@@deriving sexp_of]
 end
 
 module Constraint = struct
-  type 'a t = Same_type of Type.t * Type.t * 'a [@@deriving sexp_of]
+  type 'a t =
+    | Same_type of Type.t * Type.t * 'a
+    | Implements_type_class of Type_class_name.t * Type.t list * 'a
+  [@@deriving sexp_of]
 end
 
 module Annotations = struct
@@ -34,8 +38,16 @@ let rec infer (expr : Expression.t) ~env =
   | Const (String _) -> Ok (no_constraints (Intrinsic String))
   | Var v ->
     let%bind poly_type = Env.value env v ~loc:expr.loc in
-    let type_ = Type.Poly.init poly_type in
-    Ok (no_constraints type_)
+    let type_, constraints = Type.Poly.init poly_type in
+    let constraints =
+      List.map constraints ~f:(fun { type_class; args } ->
+        Constraint.Implements_type_class
+          ( type_class
+          , args
+          , ([ Var_requires_type_class ({ value = v; loc = expr.loc }, type_class) ]
+             : Annotations.t) ))
+    in
+    Ok (type_, constraints)
   | Lambda (args, body) ->
     let arg_types = List.map args ~f:(fun name -> name, Type.Var.create ()) in
     let env = Env.with_vars env arg_types in

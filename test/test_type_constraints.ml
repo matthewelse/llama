@@ -130,7 +130,8 @@ let%expect_test "option match" =
           (args (1))
           (loc (:0:-1 :0:-1))))))
       (constructors ((Some option)))
-      (fields ())))
+      (fields       ())
+      (type_classes ())))
     (constraints ((
       Same_type
       (Var 0)

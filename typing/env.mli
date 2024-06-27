@@ -6,6 +6,7 @@ type t =
   ; type_declarations : Type.Constructor.t Type_name.Map.t
   ; constructors : Type_name.t Constructor.Map.t
   ; fields : Type_name.t Field_name.Map.t
+  ; type_classes : Type_class.t Type_class_name.Map.t
   }
 [@@deriving sexp_of]
 
@@ -24,6 +25,12 @@ val type_declaration
 
 val value : t -> Ident.t -> loc:Span.t -> (Type.Poly.t, Type_error.t) result
 
+val type_class
+  :  t
+  -> Type_class_name.t
+  -> loc:Span.t
+  -> (Type_class.t, Type_error.t) result
+
 (** Modifers *)
 
 val with_constructors
@@ -38,6 +45,7 @@ val with_fields
   -> type_name:Type_name.t
   -> (t, Type_error.t) result
 
+val with_type_class : t -> Type_class_name.t -> Type_class.t -> t
 val with_type_declaration : t -> Type_name.t -> Type.Constructor.t -> t
 val with_var : t -> Ident.t -> Type.Poly.t -> t
 val with_vars : t -> (Ident.t * Type.Var.t) list -> t

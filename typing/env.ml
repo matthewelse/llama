@@ -6,6 +6,7 @@ type t =
   ; type_declarations : Type.Constructor.t Type_name.Map.t
   ; constructors : Type_name.t Constructor.Map.t
   ; fields : Type_name.t Field_name.Map.t
+  ; type_classes : Type_class.t Type_class_name.Map.t
   }
 [@@deriving sexp_of]
 
@@ -14,6 +15,7 @@ let empty =
   ; type_declarations = Type_name.Map.empty
   ; constructors = Constructor.Map.empty
   ; fields = Field_name.Map.empty
+  ; type_classes = Type_class_name.Map.empty
   }
 ;;
 
@@ -40,6 +42,15 @@ let value t name ~loc =
   Map.find t.values name
   |> Result.of_option
        ~error:(Type_error.of_string ~loc [%string "Unbound variable [%{name#Ident}]"])
+;;
+
+let type_class t name ~loc =
+  Map.find t.type_classes name
+  |> Result.of_option
+       ~error:
+         (Type_error.of_string
+            ~loc
+            [%string "Unknown type class [%{name#Type_class_name}]"])
 ;;
 
 let with_fields t fields ~type_name =
@@ -91,3 +102,7 @@ let with_vars t vars =
 
 let with_var t name ty = { t with values = Map.set t.values ~key:name ~data:ty }
 let remove_var t name = { t with values = Map.remove t.values name }
+
+let with_type_class t name tc =
+  { t with type_classes = Map.add_exn t.type_classes ~key:name ~data:tc }
+;;

@@ -56,9 +56,11 @@ let rec of_ast (t : Ast.Type.t) ~var_mapping =
 ;;
 
 module Constraint = struct
+  type ty = t [@@deriving sexp_of]
+
   type t =
     { type_class : Type_class_name.t
-    ; args : Var.t list
+    ; args : ty list
     }
   [@@deriving sexp_of]
 end
@@ -83,8 +85,15 @@ module Poly = struct
   ;;
 
   let init t =
-    let fresh_vars = Set.to_map t.quantifiers ~f:(fun _ -> Var (Var.create ())) in
-    ty_subst t.ty ~replacements:fresh_vars
+    let fresh_vars' = Set.to_map t.quantifiers ~f:(fun _ -> Var.create ()) in
+    let fresh_vars = Map.map fresh_vars' ~f:(fun var -> Var var) in
+    let constraints =
+      List.map t.constraints ~f:(fun constraints_ ->
+        { constraints_ with
+          args = List.map constraints_.args ~f:(ty_subst ~replacements:fresh_vars)
+        })
+    in
+    ty_subst t.ty ~replacements:fresh_vars, constraints
   ;;
 
   let free_type_vars t = Set.diff (free_type_vars t.ty) t.quantifiers

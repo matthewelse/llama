@@ -28,9 +28,11 @@ type t = Var.t t_generic [@@deriving sexp_of]
 val of_ast : Ast.Type.t -> var_mapping:Var.t String.Map.t -> t
 
 module Constraint : sig
+  type ty := t
+
   type t =
     { type_class : Type_class_name.t
-    ; args : Var.t list
+    ; args : ty list
     }
   [@@deriving sexp_of]
 end
@@ -51,7 +53,7 @@ module Poly : sig
 
   (** [init t] returns a monomorphic type with fresh free type variables for each of the quantified
       type variables. *)
-  val init : t -> ty
+  val init : t -> ty * Constraint.t list
 
   val subst : t -> replacements:ty Var.Map.t -> t
   val free_type_vars : t -> Var.Set.t

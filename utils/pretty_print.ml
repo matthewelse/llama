@@ -89,7 +89,7 @@ let pp_polytype formatter (ty : Type.Poly.t) =
         Format.pp_print_string formatter " (";
         Format.pp_print_list
           ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
-          (pp_tv ~tvs)
+          (pp_type' ~tvs)
           formatter
           args;
         Format.pp_print_string formatter ")")

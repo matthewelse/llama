@@ -3,6 +3,7 @@ open! Core
 module Value : sig
   type t =
     | Add_int
+    | Int_equal
     | Make_ref
     | Set_ref
     (** FIXME: This probably shouldn't be a special case - we should just allow first-class
