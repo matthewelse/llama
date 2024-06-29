@@ -22,4 +22,6 @@ module Type : sig
   [@@deriving enumerate, equal, variants, sexp_of]
 
   include Stringable.S with type t := t
+
+  val type_name : t -> Type_name.t
 end

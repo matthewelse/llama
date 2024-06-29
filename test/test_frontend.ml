@@ -3,8 +3,6 @@ open! Import
 
 let example0 =
   {|
-  type int = "%int"
-
   intrinsic add_int : int -> int -> int = "%add_int"
 
   let a = 10
@@ -51,7 +49,6 @@ let%expect_test _ =
   let _ast = parse example0 in
   [%expect
     {|
-    type int = "%int"
     intrinsic add_int : int -> int -> int = "%add_int"
     let a = 10
     let c = add_int(1, 2)
@@ -67,9 +64,8 @@ let%expect_test _ =
     let l = Cons ((3, Nil))
     let m = Cons ((1, Cons ((2, Cons ((3, Nil))))))
     let n = match l with
-
-      | Nil -> 0
-      | Cons (a, b) -> 10
+    | Nil -> 0
+    | Cons (a, b) -> 10
     |}]
 ;;
 (* let result = Infer.type_ast ast |> ok_exn in

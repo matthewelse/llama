@@ -115,11 +115,7 @@ let type_declaration ==
     }
 
 let type_desc :=
-  | id = located(type_id);            { Type_shape.Alias ({ desc = Apply (id, [])
-                                                          ; loc = $sloc }) }
   | "{"; fields = record_fields; "}"; { Type_shape.Record { fields } }
-  | name = String;                    { Type_shape.Alias ({ desc = Intrinsic (Intrinsic.Type.of_string name)
-                                                          ; loc = $sloc }) }
   | constructors = variant;           { Type_shape.Variant { constructors } }
 
 let variant :=

@@ -49,10 +49,6 @@ let rec pp_type' formatter (ty : Type.t) ~tvs =
       formatter
       ts;
     Format.pp_print_char formatter ')'
-  | Intrinsic i ->
-    Format.pp_print_char formatter '"';
-    Format.pp_print_string formatter (Intrinsic.Type.to_string i);
-    Format.pp_print_char formatter '"'
 ;;
 
 let map_type_vars vars =
@@ -133,10 +129,6 @@ let rec pp_ast_type formatter (ty : Ast.Type.t) =
       formatter
       ts.value;
     Format.pp_print_char formatter ')'
-  | Intrinsic i ->
-    Format.pp_print_char formatter '"';
-    Format.pp_print_string formatter (Intrinsic.Type.to_string i);
-    Format.pp_print_char formatter '"'
 ;;
 
 let pp_ast_polytype formatter (ty : Ast.Type.Poly.t) =
@@ -241,9 +233,7 @@ let rec pp_expr formatter (expr : Expression.t) =
   | Match { scrutinee; cases } ->
     Format.pp_print_string formatter "match ";
     pp_expr formatter scrutinee;
-    Format.pp_print_string formatter " with ";
-    Format.pp_open_vbox formatter 2;
-    Format.pp_print_cut formatter ();
+    Format.pp_print_string formatter " with\n";
     Format.pp_print_list
       ~pp_sep:(fun formatter () -> Format.pp_print_cut formatter ())
       (fun formatter (pattern, expr) ->
@@ -262,10 +252,6 @@ let pp_intrinsic formatter intrinsic =
   Format.pp_print_char formatter '"'
 ;;
 
-(* let pp_intrinsic_type formatter intrinsic =
-   Format.pp_print_string formatter (Intrinsic.Type.to_string intrinsic)
-   ;;*)
-
 let pp_type_name formatter name =
   Format.pp_print_string formatter (Type_name.to_string name)
 ;;
@@ -280,7 +266,6 @@ let pp_located pp_a formatter (located : _ Located.t) = pp_a formatter located.v
 
 let pp_type_shape formatter (shape : Ast.Type_shape.t) =
   match shape with
-  | Alias ty -> pp_ast_type formatter ty
   | Record { fields } ->
     Format.pp_print_char formatter '{';
     Format.pp_print_list

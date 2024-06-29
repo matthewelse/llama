@@ -143,8 +143,11 @@ let render t fmt =
   Format.pp_print_newline fmt ();
   List.iteri relevant_code ~f:(fun i line ->
     let line_number = start_line + i in
+    let line_number' =
+      Int.to_string line_number |> String.pad_left ~len:max_line_number_length ~char:' '
+    in
     let labels = Map.find_multi single_line_labels line_number in
-    Format.pp_print_string fmt [%string "%{line_number#Int} │ %{line}"];
+    Format.pp_print_string fmt [%string "%{line_number'} │ %{line}"];
     Format.pp_print_newline fmt ();
     List.iter labels ~f:(fun (primary_or_secondary, label) ->
       let annotation_char =

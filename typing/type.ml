@@ -8,7 +8,6 @@ type 'var t_generic =
   | Apply of Type_name.t Located.t * 'var t_generic list
   | Fun of 'var t_generic list * 'var t_generic
   | Tuple of 'var t_generic list
-  | Intrinsic of Intrinsic.Type.t
 [@@deriving fold, iter, sexp_of, variants]
 
 type t = Var.t t_generic [@@deriving sexp_of]
@@ -26,7 +25,10 @@ let exists_free_type_var t ~f =
 ;;
 
 let const t = Apply (t, [])
-let intrinsic i = Intrinsic i
+
+let intrinsic name =
+  Apply ({ value = Intrinsic.Type.type_name name; loc = Span.dummy }, [])
+;;
 
 let free_type_vars t =
   fold_free_type_vars t ~init:Var.Set.empty ~f:(fun acc v -> Set.add acc v)
@@ -43,7 +45,6 @@ let rec subst t ~replacements =
   | Apply (name, ts) -> Apply (name, List.map ts ~f:(fun t -> subst t ~replacements))
   | Fun (args, r) -> Fun (List.map args ~f:(subst ~replacements), subst r ~replacements)
   | Tuple ts -> Tuple (List.map ts ~f:(subst ~replacements))
-  | Intrinsic _ -> t
 ;;
 
 let rec of_ast (t : Ast.Type.t) ~var_mapping =
@@ -52,7 +53,6 @@ let rec of_ast (t : Ast.Type.t) ~var_mapping =
   | Apply (name, ts) -> Apply (name, List.map ts ~f:(of_ast ~var_mapping))
   | Fun (args, r) -> Fun (List.map args ~f:(of_ast ~var_mapping), of_ast r ~var_mapping)
   | Tuple ts -> Tuple (List.map ts.value ~f:(of_ast ~var_mapping))
-  | Intrinsic i -> Intrinsic i
 ;;
 
 module Constraint = struct
@@ -130,7 +130,7 @@ module Constructor = struct
 
   module Shape = struct
     type t =
-      | Alias of ty
+      | Intrinsic of Intrinsic.Type.t
       | Record of
           { fields : (Field_name.t Located.t * ty) list
           ; id : Id.t

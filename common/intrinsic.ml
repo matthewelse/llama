@@ -36,18 +36,20 @@ module Type = struct
 
   let to_string t =
     match t with
-    | Bool -> "%bool"
-    | Int -> "%int"
-    | Ref -> "%ref"
-    | String -> "%string"
+    | Bool -> "bool"
+    | Int -> "int"
+    | Ref -> "ref"
+    | String -> "string"
   ;;
 
   let of_string s =
     match s with
-    | "%bool" -> Bool
-    | "%int" -> Int
-    | "%ref" -> Ref
-    | "%string" -> String
+    | "bool" -> Bool
+    | "int" -> Int
+    | "ref" -> Ref
+    | "string" -> String
     | _ -> failwith [%string "Invalid type intrinsic %{s}"]
   ;;
+
+  let type_name t = Type_name.of_string (to_string t)
 end

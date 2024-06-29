@@ -9,7 +9,6 @@ module Type = struct
 
   and desc =
     | Var of string
-    | Intrinsic of Intrinsic.Type.t
     | Apply of (Type_name.t Located.t * t list)
     | Fun of (t list * t)
     | Tuple of t list Located.t
@@ -28,7 +27,6 @@ module Type = struct
   let rec free_type_vars t ~acc =
     match t.desc with
     | Var v -> v :: acc
-    | Intrinsic _ -> acc
     | Apply (_, args) ->
       List.fold args ~init:acc ~f:(fun acc next -> free_type_vars next ~acc)
     | Fun (args, r) ->
@@ -48,7 +46,6 @@ end
 
 module Type_shape = struct
   type t =
-    | Alias of Type.t
     | Record of { fields : (Field_name.t Located.t * Type.t) list }
     | Variant of { constructors : (Constructor.t Located.t * Type.t option) list }
   [@@deriving sexp_of]

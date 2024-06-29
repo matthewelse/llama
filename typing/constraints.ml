@@ -34,8 +34,8 @@ let rec infer (expr : Expression.t) ~env =
   let open Result.Let_syntax in
   let no_constraints ty : Type.t * t = ty, empty in
   match expr.desc with
-  | Const (Int _) -> Ok (no_constraints (Intrinsic Int))
-  | Const (String _) -> Ok (no_constraints (Intrinsic String))
+  | Const (Int _) -> Ok (no_constraints (Type.intrinsic Int))
+  | Const (String _) -> Ok (no_constraints (Type.intrinsic String))
   | Var v ->
     let%bind poly_type = Env.value env v ~loc:expr.loc in
     let type_, constraints = Type.Poly.init poly_type in
@@ -292,8 +292,6 @@ and infer_constructor constructor_name arg ~env =
 and check (expr : Expression.t) (expected_ty : Type.t) ~env ~loc : (t, _) result =
   let open Result.Let_syntax in
   match expr.desc, expected_ty with
-  | Const (Int _), Intrinsic Int -> Ok empty
-  | Const (String _), Intrinsic String -> Ok empty
   | Lambda (args, body), Fun (arg_types, result) ->
     let%bind env =
       match

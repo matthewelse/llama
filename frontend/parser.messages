@@ -959,15 +959,3 @@ program: Intrinsic Ident Colon Ident Equal With
 ##
 
 <YOUR SYNTAX ERROR MESSAGE HERE>
-
-program: Type Ident Equal Ident With
-##
-## Ends in an error in state: 133.
-##
-## list(structure_item) -> structure_item . list(structure_item) [ Eof ]
-##
-## The known suffix of the stack is as follows:
-## structure_item
-##
-
-<YOUR SYNTAX ERROR MESSAGE HERE>

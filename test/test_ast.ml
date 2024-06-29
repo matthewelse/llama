@@ -7,13 +7,7 @@ let%expect_test "experiment" =
   let tn_int = Located.dummy (Type_name.of_string "int") in
   let ty_int : Ast.Type.t = { desc = Apply (tn_int, []); loc = Span.dummy } in
   let ast : Ast.t =
-    [ Type_declaration
-        { name = tn_int
-        ; type_params = []
-        ; type_shape = Alias { desc = Intrinsic Int; loc = Span.dummy }
-        ; loc = Span.dummy
-        }
-    ; Intrinsic
+    [ Intrinsic
         { name = Located.dummy (Ident.of_string "add")
         ; intrinsic = Located.dummy Intrinsic.Value.Add_int
         ; type_ =
@@ -81,7 +75,6 @@ let%expect_test "experiment" =
   Pretty_print.pp_ast Format.std_formatter ast;
   [%expect
     {|
-    type int = "%int"
     intrinsic add : int -> int -> int = "%add_int"
     let x = add(10, 50)
     type unit = | Unit

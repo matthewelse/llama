@@ -88,9 +88,6 @@ let type_ast ?(env = Env.empty) (ast : Ast.t) =
       in
       let%bind.Result shape, env =
         match type_shape with
-        | Alias ty ->
-          let ty = Type.of_ast ty ~var_mapping:type_var_mapping in
-          Ok (Type.Constructor.Shape.Alias ty, env)
         | Record { fields = record_fields } ->
           let record_fields =
             List.map record_fields ~f:(fun (name, ty) ->
