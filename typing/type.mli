@@ -32,7 +32,7 @@ module Constraint : sig
 
   type t =
     { type_class : Type_class_name.t
-    ; args : ty list
+    ; arg : ty
     }
   [@@deriving sexp_of]
 end

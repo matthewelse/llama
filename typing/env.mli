@@ -7,6 +7,7 @@ type t =
   ; constructors : Type_name.t Constructor.Map.t
   ; fields : Type_name.t Field_name.Map.t
   ; type_classes : Type_class.t Type_class_name.Map.t
+  ; type_class_implementations : Type_class.Impl.t list
   }
 [@@deriving sexp_of]
 
@@ -50,3 +51,4 @@ val with_type_declaration : t -> Type_name.t -> Type.Constructor.t -> t
 val with_var : t -> Ident.t -> Type.Poly.t -> t
 val with_vars : t -> (Ident.t * Type.Var.t) list -> t
 val remove_var : t -> Ident.t -> t
+val with_type_class_impl : t -> Type_class.Impl.t -> t

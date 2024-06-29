@@ -71,6 +71,9 @@ rule read =
   | "class"  { Class }
   | "sig"    { Sig }
   | "val"    { Val }
+  | "impl"   { Impl }
+  | "struct" { Struct }
+  | "where"  { Where }
   | id       { Ident (Lexing.lexeme lexbuf)}
   | constructor { Constructor (Lexing.lexeme lexbuf)}
   | int      { Int (Lexing.lexeme lexbuf) }

@@ -7,6 +7,10 @@ let parse_with_error_reporting code ~pp_ast =
   Lexing.set_filename lexbuf "<example>";
   match Llama_frontend.Parser.program Llama_frontend.Lexer.read lexbuf with
   | exception Llama_frontend.Parser.Error n ->
+    let message =
+      try Llama_frontend.Errors.message n |> String.rstrip with
+      | _ -> [%string "Unknown error %{n#Int}"]
+    in
     let error_output =
       Diagnostics.create
         ~code
@@ -15,9 +19,7 @@ let parse_with_error_reporting code ~pp_ast =
         ~error_offset:(Lexing.lexeme_start_p lexbuf)
         ~labels:
           { primary =
-              { span = Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf
-              ; message = Llama_frontend.Errors.message n |> String.rstrip
-              }
+              { span = Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf; message }
           ; secondary = []
           }
         Error

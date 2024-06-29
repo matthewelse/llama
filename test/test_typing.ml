@@ -17,9 +17,10 @@ let%expect_test "int" =
         (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
         (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
         (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
-      (constructors ())
-      (fields       ())
-      (type_classes ())))
+      (constructors               ())
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;
 
@@ -67,8 +68,9 @@ let%expect_test "option" =
       (constructors (
         (None option)
         (Some option)))
-      (fields       ())
-      (type_classes ())))
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;
 
@@ -132,8 +134,9 @@ let%expect_test "list" =
       (constructors (
         (Cons list)
         (Nil  list)))
-      (fields       ())
-      (type_classes ())))
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;
 
@@ -203,8 +206,9 @@ let%expect_test "list and options" =
         (Nil  list)
         (None option)
         (Some option)))
-      (fields       ())
-      (type_classes ())))
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;
 
@@ -259,8 +263,9 @@ let%expect_test "tuple" =
         (A a)
         (B b)
         (C c)))
-      (fields       ())
-      (type_classes ())))
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;
 
@@ -286,9 +291,10 @@ let%expect_test "variables" =
         (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
         (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
         (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
-      (constructors ())
-      (fields       ())
-      (type_classes ())))
+      (constructors               ())
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;
 
@@ -322,9 +328,10 @@ let%expect_test "let _ = _ in _" =
         (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
         (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
         (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
-      (constructors ())
-      (fields       ())
-      (type_classes ())))
+      (constructors               ())
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;
 
@@ -371,9 +378,10 @@ let%expect_test "lambdas" =
         (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
         (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
         (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
-      (constructors ())
-      (fields       ())
-      (type_classes ())))
+      (constructors               ())
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;
 
@@ -482,8 +490,9 @@ let%expect_test "polymorphism" =
         (Nil  list)
         (None option)
         (Some option)))
-      (fields       ())
-      (type_classes ())))
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;
 
@@ -622,7 +631,8 @@ let%expect_test "recursive functions" =
       (constructors (
         (Cons list)
         (Nil  list)))
-      (fields       ())
-      (type_classes ())))
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     |}]
 ;;

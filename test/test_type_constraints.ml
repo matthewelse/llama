@@ -134,8 +134,9 @@ let%expect_test "option match" =
         (ref ((shape (Intrinsic Ref)) (args (2)) (loc (:0:-1 :0:-1))))
         (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
       (constructors ((Some option)))
-      (fields       ())
-      (type_classes ())))
+      (fields                     ())
+      (type_classes               ())
+      (type_class_implementations ())))
     (constraints ((
       Same_type
       (Var 0)

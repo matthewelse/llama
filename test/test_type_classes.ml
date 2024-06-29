@@ -10,7 +10,7 @@ let%expect_test "experiment" =
   let ast : Ast.t =
     [ Type_class_declaration
         { name = Located.dummy (Type_class_name.of_string "Eq")
-        ; args = [ Located.dummy "'a" ]
+        ; arg = Located.dummy "'a"
         ; functions =
             [ { name = Located.dummy (Ident.of_string "eq")
               ; ty =
@@ -24,6 +24,7 @@ let%expect_test "experiment" =
                   }
               }
             ]
+        ; constraints = []
         }
     ]
   in
@@ -40,8 +41,8 @@ let%expect_test "experiment" =
         Fun ([ Var tv; Var tv ], Apply (Located.dummy @@ Type_name.of_string "bool", []))
     ; quantifiers = Type.Var.Set.singleton tv
     ; constraints =
-        [ { type_class = Type_class_name.of_string "Eq"; args = [ Var tv ] }
-        ; { type_class = Type_class_name.of_string "Ord"; args = [ Var tv ] }
+        [ { type_class = Type_class_name.of_string "Eq"; arg = Var tv }
+        ; { type_class = Type_class_name.of_string "Ord"; arg = Var tv }
         ]
     };
   [%expect {| 'a. Eq ('a), Ord ('a) => 'a -> 'a -> bool |}]
@@ -57,6 +58,14 @@ let%expect_test "experiment" =
 
   class Eq ('a) : sig
     val eq : 'a -> 'a -> bool
+  end
+
+  impl Eq (bool) = struct
+    let eq = fun(x, y) -> bool_equal(x, y)
+  end
+
+  class Ord ('a) where Eq ('a) : sig
+    val compare : 'a -> 'a -> int
   end
 
   let f = fun(x, y) -> bool_and (eq(x, y), eq (Some x, Some y))
@@ -81,6 +90,14 @@ let%expect_test "experiment" =
              (Apply ((value bool) (loc (<example>:4:33 <example>:4:37))) ()))
             (Apply ((value bool) (loc (<example>:4:41 <example>:4:45))) ())))
           (constraints ())))
+        (compare (
+          (quantifiers (6))
+          (ty (
+            Fun
+            ((Var 6)
+             (Var 6))
+            (Apply ((value int) (loc (<example>:16:30 <example>:16:33))) ())))
+          (constraints (((type_class Ord) (arg (Var 6)))))))
         (eq (
           (quantifiers (3))
           (ty (
@@ -88,21 +105,21 @@ let%expect_test "experiment" =
             ((Var 3)
              (Var 3))
             (Apply ((value bool) (loc (<example>:8:25 <example>:8:29))) ())))
-          (constraints (((type_class Eq) (args ((Var 3))))))))
+          (constraints (((type_class Eq) (arg (Var 3)))))))
         (f (
-          (quantifiers (10))
+          (quantifiers (13))
           (ty (
             Fun
-            ((Var 10)
-             (Var 10))
+            ((Var 13)
+             (Var 13))
             (Apply ((value bool) (loc (<example>:5:39 <example>:5:43))) ())))
           (constraints (
             ((type_class Eq)
-             (args ((
+             (arg (
                Apply
                ((value option) (loc (<example>:2:2 <example>:2:38)))
-               ((Var 10))))))
-            ((type_class Eq) (args ((Var 10))))))))))
+               ((Var 13)))))
+            ((type_class Eq) (arg (Var 13)))))))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
         (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
@@ -121,6 +138,11 @@ let%expect_test "experiment" =
         (None option)
         (Some option)))
       (fields       ())
-      (type_classes ())))
+      (type_classes ())
+      (type_class_implementations ((
+        (constraints ())
+        (type_class Eq)
+        (for_type (
+          Apply ((value bool) (loc (<example>:11:11 <example>:11:15))) ())))))))
     |}]
 ;;

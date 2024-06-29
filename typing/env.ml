@@ -7,6 +7,7 @@ type t =
   ; constructors : Type_name.t Constructor.Map.t
   ; fields : Type_name.t Field_name.Map.t
   ; type_classes : Type_class.t Type_class_name.Map.t
+  ; type_class_implementations : Type_class.Impl.t list
   }
 [@@deriving sexp_of]
 
@@ -25,6 +26,7 @@ let empty () =
   ; constructors = Constructor.Map.empty
   ; fields = Field_name.Map.empty
   ; type_classes = Type_class_name.Map.empty
+  ; type_class_implementations = []
   }
 ;;
 
@@ -114,4 +116,8 @@ let remove_var t name = { t with values = Map.remove t.values name }
 
 let with_type_class t name tc =
   { t with type_classes = Map.add_exn t.type_classes ~key:name ~data:tc }
+;;
+
+let with_type_class_impl t tc =
+  { t with type_class_implementations = tc :: t.type_class_implementations }
 ;;

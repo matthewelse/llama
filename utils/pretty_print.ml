@@ -80,14 +80,10 @@ let pp_polytype formatter (ty : Type.Poly.t) =
   then (
     Format.pp_print_list
       ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
-      (fun formatter { Type.Constraint.type_class; args } ->
+      (fun formatter { Type.Constraint.type_class; arg } ->
         Format.pp_print_string formatter (Type_class_name.to_string type_class);
         Format.pp_print_string formatter " (";
-        Format.pp_print_list
-          ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
-          (pp_type' ~tvs)
-          formatter
-          args;
+        pp_type' formatter ~tvs arg;
         Format.pp_print_string formatter ")")
       formatter
       constraints;
@@ -289,6 +285,19 @@ let pp_type_shape formatter (shape : Ast.Type_shape.t) =
       constructors
 ;;
 
+let pp_type_args formatter type_params =
+  if not (List.is_empty type_params)
+  then (
+    if List.length type_params > 1 then Format.pp_print_char formatter '(';
+    Format.pp_print_list
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+      (pp_located (fun formatter tv -> Format.pp_print_string formatter tv))
+      formatter
+      type_params;
+    if List.length type_params > 1 then Format.pp_print_char formatter ')';
+    Format.pp_print_string formatter " ")
+;;
+
 let pp_structure_item formatter (item : Ast.Structure_item.t) =
   match item with
   | Let { name; value; loc = _ } ->
@@ -303,11 +312,27 @@ let pp_structure_item formatter (item : Ast.Structure_item.t) =
     pp_ast_polytype formatter type_;
     Format.pp_print_string formatter " = ";
     pp_intrinsic formatter intrinsic.value
-  | Type_class_declaration { name; args; functions } ->
-    let args = List.map args ~f:Located.value |> String.concat ~sep:", " in
-    Format.pp_print_string
+  | Type_class_declaration { name; arg; functions; constraints } ->
+    Format.fprintf
       formatter
-      [%string "class %{name.value#Type_class_name} (%{args}) : sig"];
+      "class %s (%s)%a : sig"
+      (Type_class_name.to_string name.value)
+      (Located.value arg)
+      (fun formatter constraints ->
+        if not (List.is_empty constraints)
+        then (
+          Format.pp_print_string formatter " where ";
+          Format.pp_print_list
+            ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+            (fun formatter { Ast.Type_constraint.type_class; arg } ->
+              Format.fprintf
+                formatter
+                "%s(%s)"
+                (Type_class_name.to_string (Located.value type_class))
+                (Located.value arg))
+            formatter
+            constraints))
+      constraints;
     Format.pp_print_newline formatter ();
     Format.pp_print_list
       ~pp_sep:Format.pp_print_newline
@@ -318,18 +343,50 @@ let pp_structure_item formatter (item : Ast.Structure_item.t) =
       functions;
     Format.pp_print_newline formatter ();
     Format.pp_print_string formatter "end"
+  | Type_class_implementation
+      { name; for_ = type_constructor, args; functions; constraints } ->
+    let format_for formatter (type_arg : _ Located.t) =
+      Format.fprintf formatter "%s" (Located.value type_arg)
+    in
+    Format.fprintf
+      formatter
+      "impl %s (%a %s)%a : sig"
+      (Type_class_name.to_string name.value)
+      (Format.pp_print_list
+         ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+         format_for)
+      args
+      (Type_name.to_string type_constructor.value)
+      (fun formatter constraints ->
+        if not (List.is_empty constraints)
+        then (
+          Format.pp_print_string formatter " where ";
+          Format.pp_print_list
+            ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+            (fun formatter { Ast.Type_constraint.type_class; arg } ->
+              Format.fprintf
+                formatter
+                "%s(%s)"
+                (Type_class_name.to_string (Located.value type_class))
+                (Located.value arg))
+            formatter
+            constraints))
+      constraints;
+    Format.pp_print_newline formatter ();
+    Format.pp_print_list
+      ~pp_sep:Format.pp_print_newline
+      (fun formatter { Ast.Type_class_implementation.Function_impl.name; value } ->
+        Format.fprintf
+          formatter
+          "  let %s = %a"
+          (Ident.to_string name.value)
+          pp_expr
+          value)
+      formatter
+      functions
   | Type_declaration { name = { value = name; _ }; type_params; type_shape; loc = _ } ->
     Format.pp_print_string formatter "type ";
-    if not (List.is_empty type_params)
-    then (
-      if List.length type_params > 1 then Format.pp_print_char formatter '(';
-      Format.pp_print_list
-        ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
-        (pp_located (fun formatter tv -> Format.pp_print_string formatter tv))
-        formatter
-        type_params;
-      if List.length type_params > 1 then Format.pp_print_char formatter ')';
-      Format.pp_print_string formatter " ");
+    pp_type_args formatter type_params;
     pp_type_name formatter name;
     Format.pp_print_string formatter " = ";
     pp_type_shape formatter type_shape

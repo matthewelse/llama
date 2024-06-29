@@ -29,6 +29,7 @@ open Expression
 %token Greater      ">"
 %token GreaterEqual ">="
 %token If           "if"
+%token Impl         "impl"
 %token In           "in"
 %token Intrinsic    "intrinsic"
 %token Lbrace       "{"
@@ -52,11 +53,13 @@ open Expression
 %token Sig          "sig"
 %token Slash        "/"
 %token Star         "*"
+%token Struct       "struct"
 %token Then         "then"
 %token To           "to"
 %token Type         "type"
 %token Val          "val"
 %token Var          "var"
+%token Where        "where"
 %token While        "while"
 %token With         "with"
 %token Eof
@@ -82,6 +85,7 @@ let structure_item :=
   | ~ = intrinsic_declaration; <Structure_item.Intrinsic>
   | ~ = let_binding;           <Structure_item.Let>
   | ~ = type_class_declaration;<Structure_item.Type_class_declaration>
+  | ~ = type_class_implementation; <Structure_item.Type_class_implementation>
   | ~ = type_declaration;      <Structure_item.Type_declaration>
 
 (* Global variable declarations *)
@@ -168,18 +172,41 @@ let type_ :=
 (* Type classes *)
 
 let type_class_declaration :=
-  | "class"; name = located(type_class_name); "("; args = separated_nonempty_list(",", located(Type_var)); ")"; ":"; "sig"; functions = list(type_class_sig); "end"; {
+  | "class"; name = located(type_class_name); "("; arg = located(Type_var); ")"; constraints = option(where_clause); ":"; "sig"; functions = list(type_class_sig); "end"; {
     { Type_class_declaration.name
-    ; args
+    ; arg
     ; functions
+    ; constraints = Option.value ~default:[] constraints
     }
   }
+
+let where_clause :=
+  | "where"; constraints = separated_list(",", type_constraint); { constraints }
+
+let type_constraint :=
+  | type_class = located(type_class_name); "("; arg = located(Type_var); ")"; { { Type_constraint.arg; type_class } }
 
 let type_class_name :=
   | name = Constructor; <Type_class_name.of_string>
 
 let type_class_sig :=
   | "val"; name = located(ident); ":"; ty = type_; { { Type_class_declaration.Function_decl.name; ty } }
+
+let type_class_implementation :=
+  | "impl" ; name = located(type_class_name);
+    "(";  args = separated_list(",", located(Type_var)); type_name = located(type_id); ")";
+    constraints = option(where_clause);
+    "="; "struct";
+    functions = list(type_class_impl); "end"; {
+    { Type_class_implementation.name
+    ; for_ = (type_name, args)
+    ; functions
+    ; constraints = Option.value ~default:[] constraints
+    }
+  }
+
+let type_class_impl :=
+  | "let"; name = located(ident); "="; value = expression; option(";;"); { { Type_class_implementation.Function_impl.name; value } }
 
 (* Expressions *)
 

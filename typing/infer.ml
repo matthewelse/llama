@@ -43,8 +43,8 @@ let type_ast ?env (ast : Ast.t) =
           { ty with
             constraints =
               List.concat_map constraints ~f:(fun (type_class, constraints) ->
-                List.map constraints ~f:(fun args : Type.Constraint.t ->
-                  { type_class; args }))
+                List.map constraints ~f:(fun arg : Type.Constraint.t ->
+                  { type_class; arg }))
           }
       in
       Ok env
@@ -54,8 +54,9 @@ let type_ast ?env (ast : Ast.t) =
       let type_ = Type.Poly.of_ast type_ ~var_mapping:String.Map.empty in
       let env = Env.with_var env name.value type_ in
       Ok env
-    | Type_class_declaration { name = type_class_name; args; functions } ->
-      (* TODO melse: implement me! *)
+    | Type_class_declaration { name = type_class_name; arg; functions; constraints = _ }
+      ->
+      (* TODO melse: implement me! include use constraints *)
       let env =
         List.fold functions ~init:env ~f:(fun env { name; ty } ->
           let type_params =
@@ -65,9 +66,7 @@ let type_ast ?env (ast : Ast.t) =
           let var_mapping =
             String.Map.of_alist_reduce type_params ~f:(fun _ most_recent -> most_recent)
           in
-          let args =
-            List.map args ~f:(fun arg -> Type.Var (Map.find_exn var_mapping arg.value))
-          in
+          let arg : Type.t = Var (Map.find_exn var_mapping arg.value) in
           let ty = Type.of_ast ty ~var_mapping in
           Env.with_var
             env
@@ -75,10 +74,32 @@ let type_ast ?env (ast : Ast.t) =
             Type.Poly.
               { ty
               ; quantifiers = Type.free_type_vars ty
-              ; constraints = [ { type_class = type_class_name.value; args } ]
+              ; constraints = [ { type_class = type_class_name.value; arg } ]
               })
       in
       Ok env
+    | Type_class_implementation
+        { name; for_ = type_name, args; functions = _; constraints } ->
+      let type_arg =
+        List.all_equal args ~equal:(Located.value_equal ~f:String.equal)
+        |> Option.map ~f:Located.value
+      in
+      let type_arg = ref type_arg in
+      let type_var = Type.Var.create () in
+      let constraints =
+        List.map constraints ~f:(fun { type_class; arg } ->
+          (match !type_arg with
+           | None -> type_arg := Some arg.value
+           | Some type_arg -> assert (String.equal arg.value type_arg));
+          type_class.value)
+      in
+      let tc : Type_class.Impl.t =
+        { constraints
+        ; type_class = name.value
+        ; for_type = Apply (type_name, List.map args ~f:(fun _ : Type.t -> Var type_var))
+        }
+      in
+      Ok (Env.with_type_class_impl env tc)
     | Type_declaration { name = { value = type_name; _ }; type_params; type_shape; loc }
       ->
       let type_params =

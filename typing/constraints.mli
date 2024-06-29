@@ -12,7 +12,7 @@ end
 module Constraint : sig
   type 'a t =
     | Same_type of Type.t * Type.t * 'a
-    | Implements_type_class of Type_class_name.t * Type.t list * 'a
+    | Implements_type_class of Type_class_name.t * Type.t * 'a
   [@@deriving sexp_of]
 end
 

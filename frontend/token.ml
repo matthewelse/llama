@@ -25,6 +25,7 @@ type token =
   | Greater
   | GreaterEqual
   | If
+  | Impl
   | In
   | Intrinsic
   | Lbrace
@@ -47,11 +48,13 @@ type token =
   | Sig
   | Slash
   | Star
+  | Struct
   | Then
   | To
   | Type
   | Val
   | Var
+  | Where
   | While
   | With
   | Eof

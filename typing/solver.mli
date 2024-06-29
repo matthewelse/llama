@@ -10,4 +10,4 @@ val normalize_ty : t -> Type.t -> env:Env.t -> (Type.t, Type_error.t) result
 val constraints
   :  t
   -> env:Env.t
-  -> ((Type_class_name.t * Type.t list list) list, Type_error.t) result
+  -> ((Type_class_name.t * Type.t list) list, Type_error.t) result

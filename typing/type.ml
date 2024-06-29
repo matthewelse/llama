@@ -60,7 +60,7 @@ module Constraint = struct
 
   type t =
     { type_class : Type_class_name.t
-    ; args : ty list
+    ; arg : ty
     }
   [@@deriving sexp_of]
 end
@@ -89,9 +89,7 @@ module Poly = struct
     let fresh_vars = Map.map fresh_vars' ~f:(fun var -> Var var) in
     let constraints =
       List.map t.constraints ~f:(fun constraints_ ->
-        { constraints_ with
-          args = List.map constraints_.args ~f:(ty_subst ~replacements:fresh_vars)
-        })
+        { constraints_ with arg = ty_subst ~replacements:fresh_vars constraints_.arg })
     in
     ty_subst t.ty ~replacements:fresh_vars, constraints
   ;;

@@ -12,7 +12,7 @@ end
 module Constraint = struct
   type 'a t =
     | Same_type of Type.t * Type.t * 'a
-    | Implements_type_class of Type_class_name.t * Type.t list * 'a
+    | Implements_type_class of Type_class_name.t * Type.t * 'a
   [@@deriving sexp_of]
 end
 
@@ -40,10 +40,10 @@ let rec infer (expr : Expression.t) ~env =
     let%bind poly_type = Env.value env v ~loc:expr.loc in
     let type_, constraints = Type.Poly.init poly_type in
     let constraints =
-      List.map constraints ~f:(fun { type_class; args } ->
+      List.map constraints ~f:(fun { type_class; arg } ->
         Constraint.Implements_type_class
           ( type_class
-          , args
+          , arg
           , ([ Var_requires_type_class ({ value = v; loc = expr.loc }, type_class) ]
              : Annotations.t) ))
     in

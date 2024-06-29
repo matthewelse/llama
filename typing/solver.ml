@@ -6,7 +6,7 @@ let debug = false
 module T = struct
   type t =
     { vars : Type.t Union_find.t Type.Var.Table.t
-    ; constraints : Type.t list list Type_class_name.Table.t
+    ; constraints : Type.t list Type_class_name.Table.t
     }
 
   let lookup_var t v =
@@ -62,8 +62,8 @@ let solve t (constraints : Constraints.t) ~(env : Env.t) =
   let%bind () =
     iter_result (Constraints.to_list constraints) ~f:(function
       | Same_type (t1, t2, annotations) -> Unify.unify_ty_ty t t1 t2 ~env ~annotations
-      | Implements_type_class (type_class, args, _annotations) ->
-        Hashtbl.add_multi t.constraints ~key:type_class ~data:args;
+      | Implements_type_class (type_class, arg, _annotations) ->
+        Hashtbl.add_multi t.constraints ~key:type_class ~data:arg;
         Ok ())
   in
   Ok
@@ -82,9 +82,7 @@ let constraints t ~env =
   |> List.sort ~compare:[%compare: Type_class_name.t * _]
   |> List.map ~f:(fun (name, constraints) ->
     let%bind.Result constraints =
-      List.map constraints ~f:(fun typs ->
-        List.map typs ~f:(normalize_ty t ~env) |> Result.all)
-      |> Result.all
+      List.map constraints ~f:(fun typ -> normalize_ty t ~env typ) |> Result.all
     in
     Ok (name, constraints))
   |> Result.all
