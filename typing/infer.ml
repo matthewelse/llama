@@ -7,8 +7,9 @@ let maybe_generalize_expression_type expr ty ~(env : Env.t) =
   else Type.Poly.mono ty
 ;;
 
-let type_ast ?(env = Env.empty) (ast : Ast.t) =
+let type_ast ?env (ast : Ast.t) =
   let open Result.Let_syntax in
+  let env = Option.value_or_thunk env ~default:Env.empty in
   List.fold_result ast ~init:env ~f:(fun env structure_item ->
     match structure_item with
     | Let { name; value; loc = _ } ->

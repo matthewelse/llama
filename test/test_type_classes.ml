@@ -82,37 +82,41 @@ let%expect_test "experiment" =
             (Apply ((value bool) (loc (<example>:4:41 <example>:4:45))) ())))
           (constraints ())))
         (eq (
-          (quantifiers (2))
+          (quantifiers (3))
           (ty (
             Fun
-            ((Var 2)
-             (Var 2))
+            ((Var 3)
+             (Var 3))
             (Apply ((value bool) (loc (<example>:8:25 <example>:8:29))) ())))
-          (constraints (((type_class Eq) (args ((Var 2))))))))
+          (constraints (((type_class Eq) (args ((Var 3))))))))
         (f (
-          (quantifiers (9))
+          (quantifiers (10))
           (ty (
             Fun
-            ((Var 9)
-             (Var 9))
+            ((Var 10)
+             (Var 10))
             (Apply ((value bool) (loc (<example>:5:39 <example>:5:43))) ())))
           (constraints (
             ((type_class Eq)
              (args ((
                Apply
                ((value option) (loc (<example>:2:2 <example>:2:38)))
-               ((Var 9))))))
-            ((type_class Eq) (args ((Var 9))))))))))
-      (type_declarations ((
-        option (
+               ((Var 10))))))
+            ((type_class Eq) (args ((Var 10))))))))))
+      (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (option (
           (shape (
             Variant
             (constructors (
               (((value None) (loc (<example>:2:21 <example>:2:25))) ())
-              (((value Some) (loc (<example>:2:28 <example>:2:32))) ((Var 0)))))
+              (((value Some) (loc (<example>:2:28 <example>:2:32))) ((Var 1)))))
             (id 0)))
-          (args (0))
-          (loc (<example>:2:2 <example>:2:38))))))
+          (args (1))
+          (loc (<example>:2:2 <example>:2:38))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
       (constructors (
         (None option)
         (Some option)))

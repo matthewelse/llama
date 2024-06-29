@@ -10,9 +10,18 @@ type t =
   }
 [@@deriving sexp_of]
 
-let empty =
+let empty () =
   { values = Ident.Map.empty
-  ; type_declarations = Type_name.Map.empty
+  ; type_declarations =
+      Intrinsic.Type.all
+      |> List.map ~f:(fun intrinsic ->
+        ( Intrinsic.Type.type_name intrinsic
+        , { Type.Constructor.shape = Intrinsic intrinsic
+          ; args =
+              List.init (Intrinsic.Type.arity intrinsic) ~f:(fun _ -> Type.Var.create ())
+          ; loc = Span.dummy
+          } ))
+      |> Type_name.Map.of_alist_exn
   ; constructors = Constructor.Map.empty
   ; fields = Field_name.Map.empty
   ; type_classes = Type_class_name.Map.empty

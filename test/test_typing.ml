@@ -12,10 +12,14 @@ let%expect_test "int" =
           (quantifiers ())
           (ty (Apply ((value int) (loc (:0:-1 :0:-1))) ()))
           (constraints ())))))
-      (type_declarations ())
-      (constructors      ())
-      (fields            ())
-      (type_classes      ())))
+      (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+      (constructors ())
+      (fields       ())
+      (type_classes ())))
     |}]
 ;;
 
@@ -35,9 +39,9 @@ let%expect_test "option" =
     (env (
       (values (
         (x (
-          (quantifiers (2))
+          (quantifiers (3))
           (ty (
-            Apply ((value option) (loc (<example>:2:4 <example>:2:40))) ((Var 2))))
+            Apply ((value option) (loc (<example>:2:4 <example>:2:40))) ((Var 3))))
           (constraints ())))
         (y (
           (quantifiers ())
@@ -46,16 +50,20 @@ let%expect_test "option" =
             ((value option) (loc (<example>:2:4 <example>:2:40)))
             ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
           (constraints ())))))
-      (type_declarations ((
-        option (
+      (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (option (
           (shape (
             Variant
             (constructors (
               (((value None) (loc (<example>:2:23 <example>:2:27))) ())
-              (((value Some) (loc (<example>:2:30 <example>:2:34))) ((Var 0)))))
+              (((value Some) (loc (<example>:2:30 <example>:2:34))) ((Var 1)))))
             (id 0)))
-          (args (0))
-          (loc (<example>:2:4 <example>:2:40))))))
+          (args (1))
+          (loc (<example>:2:4 <example>:2:40))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
       (constructors (
         (None option)
         (Some option)))
@@ -83,9 +91,9 @@ let%expect_test "list" =
     (env (
       (values (
         (x (
-          (quantifiers (2))
+          (quantifiers (3))
           (ty (
-            Apply ((value list) (loc (<example>:2:4 <example>:2:47))) ((Var 2))))
+            Apply ((value list) (loc (<example>:2:4 <example>:2:47))) ((Var 3))))
           (constraints ())))
         (y (
           (quantifiers ())
@@ -101,8 +109,10 @@ let%expect_test "list" =
             ((value list) (loc (<example>:2:4 <example>:2:47)))
             ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
           (constraints ())))))
-      (type_declarations ((
-        list (
+      (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (list (
           (shape (
             Variant
             (constructors (
@@ -110,13 +120,15 @@ let%expect_test "list" =
               (((value Cons) (loc (<example>:2:27 <example>:2:31)))
                ((
                  Tuple (
-                   (Var 0)
+                   (Var 1)
                    (Apply
                      ((value list) (loc (<example>:2:43 <example>:2:47)))
-                     ((Var 0)))))))))
+                     ((Var 1)))))))))
             (id 0)))
-          (args (0))
-          (loc (<example>:2:4 <example>:2:47))))))
+          (args (1))
+          (loc (<example>:2:4 <example>:2:47))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
       (constructors (
         (Cons list)
         (Nil  list)))
@@ -158,6 +170,8 @@ let%expect_test "list and options" =
             ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
           (constraints ())))))
       (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
         (list (
           (shape (
             Variant
@@ -166,22 +180,24 @@ let%expect_test "list and options" =
               (((value Cons) (loc (<example>:2:27 <example>:2:31)))
                ((
                  Tuple (
-                   (Var 0)
+                   (Var 1)
                    (Apply
                      ((value list) (loc (<example>:2:43 <example>:2:47)))
-                     ((Var 0)))))))))
+                     ((Var 1)))))))))
             (id 0)))
-          (args (0))
+          (args (1))
           (loc (<example>:2:4 <example>:2:47))))
         (option (
           (shape (
             Variant
             (constructors (
               (((value None) (loc (<example>:3:23 <example>:3:27))) ())
-              (((value Some) (loc (<example>:3:30 <example>:3:34))) ((Var 1)))))
+              (((value Some) (loc (<example>:3:30 <example>:3:34))) ((Var 2)))))
             (id 1)))
-          (args (1))
-          (loc (<example>:3:4 <example>:3:40))))))
+          (args (2))
+          (loc (<example>:3:4 <example>:3:40))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
       (constructors (
         (Cons list)
         (Nil  list)
@@ -228,13 +244,17 @@ let%expect_test "tuple" =
             (id 1)))
           (args ())
           (loc (<example>:3:4 <example>:3:16))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
         (c (
           (shape (
             Variant
             (constructors ((((value C) (loc (<example>:4:15 <example>:4:16))) ())))
             (id 2)))
           (args ())
-          (loc (<example>:4:4 <example>:4:16))))))
+          (loc (<example>:4:4 <example>:4:16))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
       (constructors (
         (A a)
         (B b)
@@ -261,10 +281,14 @@ let%expect_test "variables" =
           (quantifiers ())
           (ty (Apply ((value int) (loc (:0:-1 :0:-1))) ()))
           (constraints ())))))
-      (type_declarations ())
-      (constructors      ())
-      (fields            ())
-      (type_classes      ())))
+      (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+      (constructors ())
+      (fields       ())
+      (type_classes ())))
     |}]
 ;;
 
@@ -293,10 +317,14 @@ let%expect_test "let _ = _ in _" =
           (quantifiers ())
           (ty (Apply ((value int) (loc (<example>:2:36 <example>:2:39))) ()))
           (constraints ())))))
-      (type_declarations ())
-      (constructors      ())
-      (fields            ())
-      (type_classes      ())))
+      (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+      (constructors ())
+      (fields       ())
+      (type_classes ())))
     |}]
 ;;
 
@@ -338,10 +366,14 @@ let%expect_test "lambdas" =
           (quantifiers ())
           (ty (Apply ((value int) (loc (<example>:2:36 <example>:2:39))) ()))
           (constraints ())))))
-      (type_declarations ())
-      (constructors      ())
-      (fields            ())
-      (type_classes      ())))
+      (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+      (constructors ())
+      (fields       ())
+      (type_classes ())))
     |}]
 ;;
 
@@ -381,16 +413,16 @@ let%expect_test "polymorphism" =
             ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
           (constraints ())))
         (hd (
-          (quantifiers (4))
+          (quantifiers (5))
           (ty (
             Fun
             ((
               Apply
               ((value list) (loc (<example>:7:10 <example>:7:13)))
-              ((Var 4))))
+              ((Var 5))))
             (Apply
               ((value option) (loc (<example>:2:6 <example>:2:42)))
-              ((Var 4)))))
+              ((Var 5)))))
           (constraints ())))
         (x (
           (quantifiers ())
@@ -417,6 +449,8 @@ let%expect_test "polymorphism" =
             ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
           (constraints ())))))
       (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
         (list (
           (shape (
             Variant
@@ -425,22 +459,24 @@ let%expect_test "polymorphism" =
               (((value Cons) (loc (<example>:3:29 <example>:3:33)))
                ((
                  Tuple (
-                   (Var 1)
+                   (Var 2)
                    (Apply
                      ((value list) (loc (<example>:3:45 <example>:3:49)))
-                     ((Var 1)))))))))
+                     ((Var 2)))))))))
             (id 1)))
-          (args (1))
+          (args (2))
           (loc (<example>:3:6 <example>:3:49))))
         (option (
           (shape (
             Variant
             (constructors (
               (((value None) (loc (<example>:2:25 <example>:2:29))) ())
-              (((value Some) (loc (<example>:2:32 <example>:2:36))) ((Var 0)))))
+              (((value Some) (loc (<example>:2:32 <example>:2:36))) ((Var 1)))))
             (id 0)))
-          (args (0))
-          (loc (<example>:2:6 <example>:2:42))))))
+          (args (1))
+          (loc (<example>:2:6 <example>:2:42))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
       (constructors (
         (Cons list)
         (Nil  list)
@@ -557,14 +593,16 @@ let%expect_test "recursive functions" =
             (Apply ((value int) (loc (<example>:4:36 <example>:4:39))) ())))
           (constraints ())))
         (len (
-          (quantifiers (3))
+          (quantifiers (4))
           (ty (
             Fun
-            ((Apply ((value list) (loc (<example>:8:6 <example>:8:9))) ((Var 3))))
+            ((Apply ((value list) (loc (<example>:8:6 <example>:8:9))) ((Var 4))))
             (Apply ((value int) (loc (:0:-1 :0:-1))) ())))
           (constraints ())))))
-      (type_declarations ((
-        list (
+      (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (list (
           (shape (
             Variant
             (constructors (
@@ -572,13 +610,15 @@ let%expect_test "recursive functions" =
               (((value Cons) (loc (<example>:2:25 <example>:2:29)))
                ((
                  Tuple (
-                   (Var 0)
+                   (Var 1)
                    (Apply
                      ((value list) (loc (<example>:2:41 <example>:2:45)))
-                     ((Var 0)))))))))
+                     ((Var 1)))))))))
             (id 0)))
-          (args (0))
-          (loc (<example>:2:2 <example>:2:45))))))
+          (args (1))
+          (loc (<example>:2:2 <example>:2:45))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
       (constructors (
         (Cons list)
         (Nil  list)))

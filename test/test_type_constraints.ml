@@ -23,7 +23,7 @@ let%expect_test "option pattern" =
   let env =
     Env.with_type_declaration
       (Env.with_constructors
-         Env.empty
+         (Env.empty ())
          [ { value = Constructor.of_string "Some"; loc = Span.dummy }, () ]
          ~type_name:(Type_name.of_string "option")
        |> Type_error.ok_exn)
@@ -55,11 +55,11 @@ let%expect_test "option pattern" =
     ~env;
   [%expect
     {|
-    ("variable we care about:" (v 1))
+    ("variable we care about:" (v 2))
     (constraints ((
       Same_type
-      (Var 1)
-      (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 2)))
+      (Var 2)
+      (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 3)))
       (::
         (Pattern_should_have_type
           ((loc (:0:-1 :0:-1))
@@ -67,7 +67,7 @@ let%expect_test "option pattern" =
              Construct (
                ((value Some) (loc (:0:-1 :0:-1)))
                (((loc (:0:-1 :0:-1)) (desc (Var ((value x) (loc (:0:-1 :0:-1)))))))))))
-          (Var 1))
+          (Var 2))
         ()))))
     |}]
 ;;
@@ -80,7 +80,7 @@ let%expect_test "option match" =
     Env.with_var
       (Env.with_type_declaration
          (Env.with_constructors
-            Env.empty
+            (Env.empty ())
             [ { value = Constructor.of_string "Some"; loc = Span.dummy }, () ]
             ~type_name:(Type_name.of_string "option")
           |> Type_error.ok_exn)
@@ -119,8 +119,10 @@ let%expect_test "option match" =
     {|
     (env (
       (values ((x ((quantifiers ()) (ty (Var 0)) (constraints ())))))
-      (type_declarations ((
-        option (
+      (type_declarations (
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (option (
           (shape (
             Variant
             (constructors (
@@ -128,14 +130,16 @@ let%expect_test "option match" =
               (((value Some) (loc (:0:-1 :0:-1))) ((Var 1)))))
             (id 0)))
           (args (1))
-          (loc (:0:-1 :0:-1))))))
+          (loc (:0:-1 :0:-1))))
+        (ref ((shape (Intrinsic Ref)) (args (2)) (loc (:0:-1 :0:-1))))
+        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
       (constructors ((Some option)))
       (fields       ())
       (type_classes ())))
     (constraints ((
       Same_type
       (Var 0)
-      (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 2)))
+      (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 3)))
       (::
         (Pattern_should_have_type
           ((loc (:0:-1 :0:-1))

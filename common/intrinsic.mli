@@ -24,4 +24,5 @@ module Type : sig
   include Stringable.S with type t := t
 
   val type_name : t -> Type_name.t
+  val arity : t -> int
 end

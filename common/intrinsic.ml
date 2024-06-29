@@ -52,4 +52,9 @@ module Type = struct
   ;;
 
   let type_name t = Type_name.of_string (to_string t)
+
+  let arity = function
+    | Bool | Int | String -> 0
+    | Ref -> 1
+  ;;
 end

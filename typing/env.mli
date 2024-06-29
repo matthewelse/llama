@@ -10,7 +10,7 @@ type t =
   }
 [@@deriving sexp_of]
 
-val empty : t
+val empty : unit -> t
 
 (** Accessors *)
 
