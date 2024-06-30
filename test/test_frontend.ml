@@ -3,10 +3,10 @@ open! Import
 
 let example0 =
   {|
-  intrinsic add_int : int -> int -> int = "%add_int"
+  intrinsic int_add : int -> int -> int = "%int_add"
 
   let a = 10
-  let c = add_int(1,2)
+  let c = int_add(1,2)
   let d = (1,2,3)
   let e = (1)
 
@@ -49,9 +49,9 @@ let%expect_test _ =
   let _ast = parse example0 in
   [%expect
     {|
-    intrinsic add_int : int -> int -> int = "%add_int"
+    intrinsic int_add : int -> int -> int = "%int_add"
     let a = 10
-    let c = add_int(1, 2)
+    let c = int_add(1, 2)
     let d = (1, 2, 3)
     let e = 1
     type t = {a : int; b : int; c : int}
@@ -75,7 +75,7 @@ let%expect_test _ =
     (result (
       (values (
         (a ((quantifiers ()) (ty (Intrinsic Int))))
-        (add_int (
+        (int_add (
           (quantifiers ())
           (ty (
             Fun

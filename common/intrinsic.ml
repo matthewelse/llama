@@ -2,27 +2,38 @@ open! Core
 
 module Value = struct
   type t =
-    | Add_int
+    | Int_add
     | Int_equal
-    | Make_ref
-    | Set_ref
-  [@@deriving variants, sexp_of]
+    | Int_land
+    | Int_neg
+    | Ref_make
+    | Ref_set
+  [@@deriving enumerate, equal, variants, sexp_of]
 
   let to_string t =
+    (* FIXME melse: consistent naming *)
     match t with
-    | Add_int -> "%add_int"
+    | Int_add -> "%int_add"
+    | Int_land -> "%int_land"
     | Int_equal -> "%int_equal"
-    | Make_ref -> "%make_ref"
-    | Set_ref -> "%set_ref"
+    | Int_neg -> "%int_neg"
+    | Ref_make -> "%ref_make"
+    | Ref_set -> "%ref_set"
   ;;
 
   let of_string s =
     match s with
-    | "%add_int" -> Add_int
+    | "%int_add" -> Int_add
     | "%int_equal" -> Int_equal
-    | "%make_ref" -> Make_ref
-    | "%set_ref" -> Set_ref
+    | "%int_land" -> Int_land
+    | "%int_neg" -> Int_neg
+    | "%ref_make" -> Ref_make
+    | "%ref_set" -> Ref_set
     | _ -> failwith [%string "Invalid value intrinsic %{s}"]
+  ;;
+
+  let%expect_test "[to_string]/[of_string] round-trip" =
+    List.iter all ~f:(fun t -> assert (equal t (of_string (to_string t))))
   ;;
 end
 

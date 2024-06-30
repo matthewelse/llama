@@ -301,17 +301,17 @@ let%expect_test "variables" =
 let%expect_test "let _ = _ in _" =
   test_fragment
     {|
-  intrinsic add_int : int -> int -> int = "%add_int"
+  intrinsic int_add : int -> int -> int = "%int_add"
 
   let y =
     let z = 10 in
-    add_int (z, z)
+    int_add (z, z)
   |};
   [%expect
     {|
     (env (
       (values (
-        (add_int (
+        (int_add (
           (quantifiers ())
           (ty (
             Fun
@@ -338,10 +338,10 @@ let%expect_test "let _ = _ in _" =
 let%expect_test "lambdas" =
   test_fragment
     {|
-  intrinsic add_int : int -> int -> int = "%add_int"
+  intrinsic int_add : int -> int -> int = "%int_add"
 
   let add_twice = fun(x,y) ->
-    add_int (add_int (x, y), add_int (x, y))
+    int_add (int_add (x, y), int_add (x, y))
   ;;
 
   let y =
@@ -353,7 +353,7 @@ let%expect_test "lambdas" =
     {|
     (env (
       (values (
-        (add_int (
+        (add_twice (
           (quantifiers ())
           (ty (
             Fun
@@ -361,7 +361,7 @@ let%expect_test "lambdas" =
              (Apply ((value int) (loc (<example>:2:29 <example>:2:32))) ()))
             (Apply ((value int) (loc (<example>:2:36 <example>:2:39))) ())))
           (constraints ())))
-        (add_twice (
+        (int_add (
           (quantifiers ())
           (ty (
             Fun
@@ -501,15 +501,13 @@ let%expect_test "value restriction" =
     {|
   type 'a option = | None | Some of 'a
 
-  type unit = | Unit
+  intrinsic ref_make : 'a -> 'a ref = "%ref_make"
+  intrinsic ref_set : 'a ref -> 'a -> unit = "%ref_set"
 
-  intrinsic make_ref : 'a -> 'a ref = "%make_ref"
-  intrinsic set_ref : 'a ref -> 'a -> unit = "%set_ref"
+  let x = ref_make (None)
 
-  let x = make_ref (None)
-
-  let y = set_ref (x, (Some 1))
-  let z = set_ref (x, (Some None))
+  let y = ref_set (x, (Some 1))
+  let z = ref_set (x, (Some None))
   |};
   [%expect
     {|
@@ -526,16 +524,14 @@ let%expect_test "don't allow a ref to be set to two different types" =
     {|
   type 'a option = | None | Some of 'a
 
-  type unit = | Unit
-
-  intrinsic make_ref : 'a -> 'a ref = "%make_ref"
-  intrinsic set_ref : 'a ref -> 'a -> unit = "%set_ref"
+  intrinsic ref_make : 'a -> 'a ref = "%ref_make"
+  intrinsic ref_set : 'a ref -> 'a -> unit = "%ref_set"
 
   let x = fun () ->
-    let y = make_ref (None) in
-    let a = set_ref (y, Some 10) in
-    let b = set_ref (y, 10) in
-    Unit
+    let y = ref_make (None) in
+    let a = ref_set (y, Some 10) in
+    let b = ref_set (y, 10) in
+    ()
   ;;
   |};
   [%expect
@@ -582,18 +578,18 @@ let%expect_test "recursive functions" =
     {|
   type 'a list = | Nil | Cons of 'a * 'a list
 
-  intrinsic add_int : int -> int -> int = "%add_int"
+  intrinsic int_add : int -> int -> int = "%int_add"
 
   let len = fun (x) ->
     match x with
     | Nil -> 0
-    | Cons (_, tl) -> add_int (len (tl), 1)
+    | Cons (_, tl) -> int_add (len (tl), 1)
   |};
   [%expect
     {|
     (env (
       (values (
-        (add_int (
+        (int_add (
           (quantifiers ())
           (ty (
             Fun

@@ -9,7 +9,7 @@ let%expect_test "experiment" =
   let ast : Ast.t =
     [ Intrinsic
         { name = Located.dummy (Ident.of_string "add")
-        ; intrinsic = Located.dummy Intrinsic.Value.Add_int
+        ; intrinsic = Located.dummy Intrinsic.Value.Int_add
         ; type_ =
             { quantifiers = []
             ; ty = { desc = Fun ([ ty_int; ty_int ], ty_int); loc = Span.dummy }
@@ -75,7 +75,7 @@ let%expect_test "experiment" =
   Pretty_print.pp_ast Format.std_formatter ast;
   [%expect
     {|
-    intrinsic add : int -> int -> int = "%add_int"
+    intrinsic add : int -> int -> int = "%int_add"
     let x = add(10, 50)
     type unit = | Unit
     type 'a option = | None | Some of 'a

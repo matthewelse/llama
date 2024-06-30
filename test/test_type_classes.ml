@@ -54,7 +54,10 @@ let%expect_test "experiment" =
   type 'a option = | None | Some of 'a
 
   intrinsic bool_equal : bool -> bool -> bool = "%int_equal"
-  intrinsic bool_and : bool -> bool -> bool = "%int_equal"
+  intrinsic bool_and : bool -> bool -> bool = "%int_land"
+  intrinsic int_add : int -> int -> int = "%int_add"
+  intrinsic int_equal : int -> int -> bool = "%int_equal"
+  intrinsic neg : int -> int = "%int_neg"
 
   class Eq ('a) : sig
     val eq : 'a -> 'a -> bool
