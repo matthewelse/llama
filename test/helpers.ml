@@ -31,7 +31,7 @@ let parse_with_error_reporting code ~pp_ast =
     Ok ast
 ;;
 
-let test_fragment ?(pp_ast = false) code =
+let test_fragment ?(pp_ast = false) ?(output = `Env) code =
   Type.Var.For_testing.reset_counter ();
   Type.Id.For_testing.reset_counter ();
   (ignore : (unit, unit) result -> unit)
@@ -40,7 +40,12 @@ let test_fragment ?(pp_ast = false) code =
   let result = Llama_typing.Infer.type_ast ast in
   match result with
   | Ok env ->
-    print_s [%message (env : Env.t)];
+    (match output with
+     | `Env -> print_s [%message (env : Env.t)]
+     | `Values ->
+       env.values
+       |> Map.iteri ~f:(fun ~key ~data ->
+         Format.printf "val %s : %a\n" (Ident.to_string key) Pretty_print.pp_polytype data));
     Ok ()
   | Error { primary_location; message } ->
     let error_output =

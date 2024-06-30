@@ -11,7 +11,7 @@ let test_pattern pattern typ ~env =
 
 let test_match scrutinee cases ~env =
   let _, constraints =
-    Constraints.infer { desc = Match { scrutinee; cases }; loc = Span.dummy } ~env
+    Constraints.infer (Match { scrutinee; cases; annotation = Span.dummy }) ~env
     |> Type_error.ok_exn
   in
   print_s [%message (constraints : Constraints.t)]
@@ -24,7 +24,7 @@ let%expect_test "option pattern" =
     Env.with_type_declaration
       (Env.with_constructors
          (Env.empty ())
-         [ { value = Constructor.of_string "Some"; loc = Span.dummy }, () ]
+         [ (Constructor.of_string "Some", Span.dummy), () ]
          ~type_name:(Type_name.of_string "option")
        |> Type_error.ok_exn)
       (Type_name.of_string "option")
@@ -32,9 +32,8 @@ let%expect_test "option pattern" =
        { shape =
            Variant
              { constructors =
-                 [ { value = Constructor.of_string "None"; loc = Span.dummy }, None
-                 ; ( { value = Constructor.of_string "Some"; loc = Span.dummy }
-                   , Some (Var arg) )
+                 [ (Constructor.of_string "None", Span.dummy), None
+                 ; (Constructor.of_string "Some", Span.dummy), Some (Var (arg, ()))
                  ]
              ; id = Type.Id.create ()
              }
@@ -45,29 +44,24 @@ let%expect_test "option pattern" =
   let v = Type.Var.create () in
   print_s [%message "variable we care about:" (v : Type.Var.t)];
   test_pattern
-    { desc =
-        Construct
-          ( Located.dummy (Constructor.of_string "Some")
-          , Some { desc = Var (Located.dummy (Ident.of_string "x")); loc = Span.dummy } )
-    ; loc = Span.dummy
-    }
-    (Type.Var v)
+    (Construct
+       ( ( (Constructor.of_string "Some", Span.dummy)
+         , Some (Var (Ident.of_string "x", Span.dummy)) )
+       , Span.dummy ))
+    (Type.Var (v, ()))
     ~env;
   [%expect
     {|
     ("variable we care about:" (v 2))
     (constraints ((
       Same_type
-      (Var 2)
-      (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 3)))
+      (Var (2 ()))
+      (Apply (((option (:0:-1 :0:-1)) ((Var (3 ())))) ()))
       (::
         (Pattern_should_have_type
-          ((loc (:0:-1 :0:-1))
-           (desc (
-             Construct (
-               ((value Some) (loc (:0:-1 :0:-1)))
-               (((loc (:0:-1 :0:-1)) (desc (Var ((value x) (loc (:0:-1 :0:-1)))))))))))
-          (Var 2))
+          (Construct (
+            ((Some (:0:-1 :0:-1)) ((Var (x (:0:-1 :0:-1))))) (:0:-1 :0:-1)))
+          (Var (2 ())))
         ()))))
     |}]
 ;;
@@ -81,7 +75,7 @@ let%expect_test "option match" =
       (Env.with_type_declaration
          (Env.with_constructors
             (Env.empty ())
-            [ { value = Constructor.of_string "Some"; loc = Span.dummy }, () ]
+            [ (Constructor.of_string "Some", Span.dummy), () ]
             ~type_name:(Type_name.of_string "option")
           |> Type_error.ok_exn)
          (Type_name.of_string "option")
@@ -89,9 +83,8 @@ let%expect_test "option match" =
           { shape =
               Variant
                 { constructors =
-                    [ { value = Constructor.of_string "None"; loc = Span.dummy }, None
-                    ; ( { value = Constructor.of_string "Some"; loc = Span.dummy }
-                      , Some (Var arg) )
+                    [ (Constructor.of_string "None", Span.dummy), None
+                    ; (Constructor.of_string "Some", Span.dummy), Some (Var (arg, ()))
                     ]
                 ; id = Type.Id.create ()
                 }
@@ -99,26 +92,22 @@ let%expect_test "option match" =
           ; loc = Span.dummy
           }))
       x
-      (Type.Poly.mono (Var (Type.Var.create ())))
+      (Type.Poly.mono (Var (Type.Var.create (), ())))
   in
   print_s [%message (env : Env.t)];
   test_match
-    { desc = Var (Ident.of_string "x"); loc = Span.dummy }
-    [ ( { desc =
-            Construct
-              ( Located.dummy (Constructor.of_string "Some")
-              , Some
-                  { desc = Var (Located.dummy (Ident.of_string "y")); loc = Span.dummy }
-              )
-        ; loc = Span.dummy
-        }
-      , { desc = Var (Ident.of_string "y"); loc = Span.dummy } )
+    (Var (Ident.of_string "x", Span.dummy))
+    [ ( Construct
+          ( ( (Constructor.of_string "Some", Span.dummy)
+            , Some (Var (Ident.of_string "y", Span.dummy)) )
+          , Span.dummy )
+      , Var (Ident.of_string "y", Span.dummy) )
     ]
     ~env;
   [%expect
     {|
     (env (
-      (values ((x ((quantifiers ()) (ty (Var 0)) (constraints ())))))
+      (values ((x ((quantifiers ()) (body (Var (0 ()))) (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
         (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
@@ -126,8 +115,7 @@ let%expect_test "option match" =
           (shape (
             Variant
             (constructors (
-              (((value None) (loc (:0:-1 :0:-1))) ())
-              (((value Some) (loc (:0:-1 :0:-1))) ((Var 1)))))
+              ((None (:0:-1 :0:-1)) ()) ((Some (:0:-1 :0:-1)) ((Var (1 ()))))))
             (id 0)))
           (args (1))
           (loc (:0:-1 :0:-1))))
@@ -139,16 +127,13 @@ let%expect_test "option match" =
       (type_class_implementations ())))
     (constraints ((
       Same_type
-      (Var 0)
-      (Apply ((value option) (loc (:0:-1 :0:-1))) ((Var 3)))
+      (Var (0 ()))
+      (Apply (((option (:0:-1 :0:-1)) ((Var (3 ())))) ()))
       (::
         (Pattern_should_have_type
-          ((loc (:0:-1 :0:-1))
-           (desc (
-             Construct (
-               ((value Some) (loc (:0:-1 :0:-1)))
-               (((loc (:0:-1 :0:-1)) (desc (Var ((value y) (loc (:0:-1 :0:-1)))))))))))
-          (Var 0))
+          (Construct (
+            ((Some (:0:-1 :0:-1)) ((Var (y (:0:-1 :0:-1))))) (:0:-1 :0:-1)))
+          (Var (0 ())))
         ()))))
     |}]
 ;;

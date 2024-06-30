@@ -10,7 +10,7 @@ module T = struct
     }
 
   let lookup_var t v =
-    Hashtbl.find_or_add t.vars v ~default:(fun () -> Union_find.create (Type.Var v))
+    Hashtbl.find_or_add t.vars v ~default:(fun () -> Union_find.create (Type.Var (v, ())))
   ;;
 
   let unify_var_var t v1 v2 =
@@ -70,10 +70,10 @@ let solve t (constraints : Constraints.t) ~(env : Env.t) =
     { env with
       values =
         Map.map env.values ~f:(fun typ ->
-          let ty = normalize_ty t typ.ty ~env |> Type_error.ok_exn in
+          let ty = normalize_ty t typ.body ~env |> Type_error.ok_exn in
           if debug
           then print_s [%message "final normalization" (typ : Type.Poly.t) (ty : Type.t)];
-          { typ with ty })
+          { typ with body = ty })
     }
 ;;
 

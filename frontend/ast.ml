@@ -1,60 +1,80 @@
 open! Core
 open! Import
 
-module Type = struct
-  type t =
-    { desc : desc
-    ; loc : Span.t
-    }
+module Ast =
+  Llama_common.Base_ast.Make
+    (String)
+    (struct
+      module Expression = struct
+        type apply = Span.t [@@deriving sexp_of]
+        type const = Span.t [@@deriving sexp_of]
+        type construct = Span.t [@@deriving sexp_of]
+        type constructor = Span.t [@@deriving sexp_of]
+        type lambda = Span.t [@@deriving sexp_of]
+        type let_ = Span.t [@@deriving sexp_of]
+        type match_ = Span.t [@@deriving sexp_of]
+        type record = Span.t [@@deriving sexp_of]
+        type record_field = Span.t [@@deriving sexp_of]
+        type tuple = Span.t [@@deriving sexp_of]
+        type var = Span.t [@@deriving sexp_of]
+      end
 
-  and desc =
-    | Var of string
-    | Apply of (Type_name.t Located.t * t list)
-    | Fun of (t list * t)
-    | Tuple of t list Located.t
-  [@@deriving sexp_of]
+      module Pattern = struct
+        type construct = Span.t [@@deriving sexp_of]
+        type constructor = Span.t [@@deriving sexp_of]
+        type tuple = Span.t [@@deriving sexp_of]
+        type var = Span.t [@@deriving sexp_of]
+      end
 
-  module Poly = struct
-    type ty = t [@@deriving sexp_of]
+      module Type = struct
+        type var = Span.t [@@deriving sexp_of]
+        type apply = Span.t [@@deriving sexp_of]
+        type fun_ = Span.t [@@deriving sexp_of]
+        type tuple = Span.t [@@deriving sexp_of]
+        type type_constructor = Span.t [@@deriving sexp_of]
+      end
+    end)
 
-    type t =
-      { quantifiers : string list
-      ; ty : ty
-      }
-    [@@deriving sexp_of]
-  end
+module Pattern = struct
+  include Ast.Pattern
 
-  let rec free_type_vars t ~acc =
-    match t.desc with
-    | Var v -> v :: acc
-    | Apply (_, args) ->
-      List.fold args ~init:acc ~f:(fun acc next -> free_type_vars next ~acc)
-    | Fun (args, r) ->
-      let acc = List.fold args ~init:acc ~f:(fun acc next -> free_type_vars next ~acc) in
-      free_type_vars r ~acc
-    | Tuple ts ->
-      List.fold ts.value ~init:acc ~f:(fun acc next -> free_type_vars next ~acc)
+  let loc t =
+    match t with
+    | Var (_, loc) | Construct (_, loc) | Tuple (_, loc) -> loc
   ;;
-
-  let generalize t : Poly.t =
-    let quantifiers = free_type_vars t ~acc:[] in
-    { ty = t; quantifiers }
-  ;;
-
-  let const name = Apply (name, [])
 end
+
+module Expression = struct
+  include Ast.Expression
+
+  let loc t =
+    match t with
+    | Var (_, loc)
+    | Apply (_, loc)
+    | Lambda (_, loc)
+    | Let { annotation = loc; _ }
+    | Const (_, loc)
+    | Tuple (_, loc)
+    | Construct (_, loc)
+    | Record (_, loc)
+    | Match { annotation = loc; _ } -> loc
+  ;;
+end
+
+module Type = Ast.Type
+module Const = Ast.Const
 
 module Type_shape = struct
   type t =
-    | Record of { fields : (Field_name.t Located.t * Type.t) list }
-    | Variant of { constructors : (Constructor.t Located.t * Type.t option) list }
+    | Record of { fields : ((Field_name.t * Span.t) * Type.t) list }
+    | Variant of { constructors : ((Constructor.t * Span.t) * Type.t option) list }
   [@@deriving sexp_of]
 end
 
 module Type_declaration = struct
   type t =
-    { name : Type_name.t Located.t
-    ; type_params : string Located.t list
+    { name : Type_name.t * Span.t
+    ; type_params : (string * Span.t) list
     ; type_shape : Type_shape.t
     ; loc : Span.t
     }
@@ -63,8 +83,8 @@ end
 
 module Value_intrinsic = struct
   type t =
-    { name : Ident.t Located.t
-    ; intrinsic : Intrinsic.Value.t Located.t
+    { name : Ident.t * Span.t
+    ; intrinsic : Intrinsic.Value.t * Span.t
     ; type_ : Type.Poly.t
     ; loc : Span.t
     }
@@ -73,7 +93,7 @@ end
 
 module Let_binding = struct
   type t =
-    { name : Ident.t Located.t
+    { name : Ident.t * Span.t
     ; value : Expression.t
     ; loc : Span.t
     }
@@ -82,8 +102,8 @@ end
 
 module Type_constraint = struct
   type t =
-    { type_class : Type_class_name.t Located.t
-    ; arg : string Located.t
+    { type_class : Type_class_name.t * Span.t
+    ; arg : string * Span.t
     }
   [@@deriving sexp_of]
 end
@@ -91,15 +111,15 @@ end
 module Type_class_declaration = struct
   module Function_decl = struct
     type t =
-      { name : Ident.t Located.t (* TODO: constraints *)
+      { name : Ident.t * Span.t (* TODO: constraints *)
       ; ty : Type.t
       }
     [@@deriving sexp_of]
   end
 
   type t =
-    { name : Type_class_name.t Located.t
-    ; arg : string Located.t
+    { name : Type_class_name.t * Span.t
+    ; arg : string * Span.t
     ; functions : Function_decl.t list
     ; constraints : Type_constraint.t list
     }
@@ -109,15 +129,15 @@ end
 module Type_class_implementation = struct
   module Function_impl = struct
     type t =
-      { name : Ident.t Located.t
+      { name : Ident.t * Span.t
       ; value : Expression.t
       }
     [@@deriving sexp_of]
   end
 
   type t =
-    { name : Type_class_name.t Located.t
-    ; for_ : Type_name.t Located.t * string Located.t list
+    { name : Type_class_name.t * Span.t
+    ; for_ : (Type_name.t * Span.t) * (string * Span.t) list
     ; functions : Function_impl.t list
     ; constraints : Type_constraint.t list
     }

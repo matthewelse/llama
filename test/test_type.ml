@@ -13,22 +13,22 @@ let%test_module "free_type_vars" =
     ;;
 
     let%expect_test "var" =
-      ftvs (Var (var ()));
+      ftvs (Var (var (), ()));
       [%expect {| (ftvs (0)) |}]
     ;;
 
     let%expect_test "apply" =
-      ftvs (Apply (Located.dummy (Type_name.of_string "x"), [ Var (var ()) ]));
+      ftvs (Apply (((Type_name.of_string "x", Span.dummy), [ Var (var (), ()) ]), ()));
       [%expect {| (ftvs (0)) |}]
     ;;
 
     let%expect_test "fun" =
-      ftvs (Fun ([ Var (var ()) ], Var (var ())));
+      ftvs (Fun (([ Var (var (), ()) ], Var (var (), ())), ()));
       [%expect {| (ftvs (0 1)) |}]
     ;;
 
     let%expect_test "tuple" =
-      ftvs (Tuple [ Var (var ()); Var (var ()) ]);
+      ftvs (Tuple ([ Var (var (), ()); Var (var (), ()) ], ()));
       [%expect {| (ftvs (0 1)) |}]
     ;;
 
@@ -51,12 +51,12 @@ let%test_module "occurs" =
     ;;
 
     let%expect_test "var" =
-      occurs (Var (var ())) (var ());
+      occurs (Var (var (), ())) (var ());
       [%expect {| (occurs false) |}]
     ;;
 
     let%expect_test "occurs" =
-      occurs (Var (var ())) (var ());
+      occurs (Var (var (), ())) (var ());
       [%expect {| (occurs false) |}]
     ;;
   end)
@@ -69,14 +69,14 @@ let%expect_test "example" =
   let x = Type.Var.create () in
   let y = Type.Var.create () in
   let z = Type.Var.create () in
-  let apply s l : Type.t = Apply (Located.dummy (Type_name.of_string s), l) in
+  let apply s l : Type.t = Apply (((Type_name.of_string s, Span.dummy), l), ()) in
   let a = apply "a" [] in
   let j x y z = apply "j" [ x; y; z ] in
   let f x y = apply "f" [ x; y ] in
-  let t1 = j (Var x) (Var y) (Var z) in
+  let t1 = j (Type.var x) (Type.var y) (Type.var z) in
   pp t1;
   [%expect {| ('a, 'b, 'c) j |}];
-  let t2 = j (f (Var y) (Var y)) (f (Var z) (Var z)) (f a a) in
+  let t2 = j (f (Type.var y) (Type.var y)) (f (Type.var z) (Type.var z)) (f a a) in
   pp t2;
   [%expect {| (('a, 'a) f, ('b, 'b) f, (a, a) f) j |}]
 ;;

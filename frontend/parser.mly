@@ -2,8 +2,7 @@
 open! Core
 open! Import
 
-open Ast
-open Expression
+module Expression = Ast.Expression
 %}
 
 %token<string> Int    "int"
@@ -82,16 +81,16 @@ let program := ~ = list(structure_item); Eof; <>
 (* Declarations *)
 
 let structure_item :=
-  | ~ = intrinsic_declaration; <Structure_item.Intrinsic>
-  | ~ = let_binding;           <Structure_item.Let>
-  | ~ = type_class_declaration;<Structure_item.Type_class_declaration>
-  | ~ = type_class_implementation; <Structure_item.Type_class_implementation>
-  | ~ = type_declaration;      <Structure_item.Type_declaration>
+  | ~ = intrinsic_declaration;     <Intrinsic>
+  | ~ = let_binding;               <Let>
+  | ~ = type_class_declaration;    <Type_class_declaration>
+  | ~ = type_class_implementation; <Type_class_implementation>
+  | ~ = type_declaration;          <Ast.Structure_item.Type_declaration>
 
 (* Global variable declarations *)
 
 let let_binding ==
-  | "let" ; name = located(ident); "="; value = expression; option(";;"); { { Let_binding.name; value; loc = $sloc } }
+  | "let" ; name = located(ident); "="; value = expression; option(";;"); { { Ast.Let_binding.name; value; loc = $sloc } }
 
 (* Type declarations *)
 
@@ -99,11 +98,11 @@ let type_vars ==
   | type_var = located(Type_var); { [ type_var ] }
   | "(" ; type_vars = separated_nonempty_list(",", located(Type_var)); ")" ; { type_vars }
 
-let located(A) == | value = A; { ({ value; loc = $sloc } : _ Located.t) }
+let located(A) == | value = A; { (value, $sloc) }
 
 let type_declaration ==
   | "type"; name = located(type_id); "="; desc = type_desc;
-    { { Type_declaration.name
+    { { Ast.Type_declaration.name
       ; type_params = []
       ; type_shape = desc
       ; loc = $sloc
@@ -111,7 +110,7 @@ let type_declaration ==
     }
   | "type"; type_params = type_vars; name = located(type_id); "="; desc = type_desc;
     {
-      { Type_declaration.name
+      { Ast.Type_declaration.name
       ; type_params
       ; type_shape = desc
       ; loc = $sloc
@@ -119,8 +118,8 @@ let type_declaration ==
     }
 
 let type_desc :=
-  | "{"; fields = record_fields; "}"; { Type_shape.Record { fields } }
-  | constructors = variant;           { Type_shape.Variant { constructors } }
+  | "{"; fields = record_fields; "}"; { Record { fields } }
+  | constructors = variant;           { Ast.Type_shape.Variant { constructors } }
 
 let variant :=
   | option("|"); constructors = separated_list("|", constructor); { constructors }
@@ -138,34 +137,33 @@ let record_field :=
 
 let intrinsic_declaration :=
   | "intrinsic"; name = located(ident); ":"; ~ = type_; "="; intrinsic_name = located(String); {
-    { Value_intrinsic.name
-    ; intrinsic = Located.map ~f:Intrinsic.Value.of_string intrinsic_name
-    ; type_ = Type.generalize type_
+    let (intrinsic_name, intrinsic_loc) = intrinsic_name in
+    { Ast.Value_intrinsic.name
+    ; intrinsic = (Intrinsic.Value.of_string intrinsic_name, intrinsic_loc)
+    ; type_ = Ast.Type.generalize type_
     ; loc = $sloc
     }
   }
 
 let base_type :=
-  | v = Type_var;    { { Type.desc = Var v; loc = $sloc } }
-  | type_id = located(type_id);     { { Type.desc = Apply (type_id, []); loc = $sloc } }
-  | type_var = Type_var; type_id = located(type_id);     { { Type.desc = Apply (type_id, [ { desc = Var type_var; loc = $loc(type_var) } ]); loc = $sloc } }
+  | v = Type_var;    { Var (v, $sloc) }
+  | type_id = located(type_id);     { Apply ((type_id, []), $sloc) }
+  | type_var = Type_var; type_id = located(type_id);     { Apply ((type_id, [ Var (type_var, $loc(type_var)) ]), $sloc) }
   | "("; ~ = type_; ")"; <>
 
 let inter_type :=
   | ~ = base_type; "*"; ~ = inter_type; {
-    match (inter_type : Type.t) with
-    | { desc = Tuple elems; _ } -> { inter_type with desc = Tuple { value = base_type :: elems.value; loc = $sloc } }
-    | _ -> { Type.desc = Tuple { value = [ base_type; inter_type ]; loc = $sloc }; loc = $sloc }
+    match (inter_type : Ast.Type.t) with
+    | Tuple (elems, _) -> Tuple (base_type :: elems, $sloc)
+    | _ -> Tuple ([ base_type; inter_type ], $sloc)
   }
   | ~ = base_type; { base_type }
 
 let type_ :=
   | ~ = inter_type; "->"; ~ = type_; {
-    match (type_ : Type.t) with
-    | { desc = Fun (args, ret); _} -> { type_ with desc = Type.Fun (inter_type :: args, ret)}
-    | _ -> { Type.desc = Fun([ inter_type ], type_)
-           ; loc = $loc
-           }
+    match (type_ : Ast.Type.t) with
+    | Fun ((args, ret), _) -> Fun ((inter_type :: args, ret), $sloc)
+    | _ -> Fun(([ inter_type ], type_), $sloc)
   }
   | ~ = inter_type; { inter_type }
 
@@ -173,7 +171,7 @@ let type_ :=
 
 let type_class_declaration :=
   | "class"; name = located(type_class_name); "("; arg = located(Type_var); ")"; constraints = option(where_clause); ":"; "sig"; functions = list(type_class_sig); "end"; {
-    { Type_class_declaration.name
+    { name
     ; arg
     ; functions
     ; constraints = Option.value ~default:[] constraints
@@ -184,13 +182,13 @@ let where_clause :=
   | "where"; constraints = separated_list(",", type_constraint); { constraints }
 
 let type_constraint :=
-  | type_class = located(type_class_name); "("; arg = located(Type_var); ")"; { { Type_constraint.arg; type_class } }
+  | type_class = located(type_class_name); "("; arg = located(Type_var); ")"; { { Ast.Type_constraint.arg; type_class } }
 
 let type_class_name :=
   | name = Constructor; <Type_class_name.of_string>
 
 let type_class_sig :=
-  | "val"; name = located(ident); ":"; ty = type_; { { Type_class_declaration.Function_decl.name; ty } }
+  | "val"; name = located(ident); ":"; ty = type_; { ({ name; ty }: Ast.Type_class_declaration.Function_decl.t) }
 
 let type_class_implementation :=
   | "impl" ; name = located(type_class_name);
@@ -198,7 +196,7 @@ let type_class_implementation :=
     constraints = option(where_clause);
     "="; "struct";
     functions = list(type_class_impl); "end"; {
-    { Type_class_implementation.name
+    { Ast.Type_class_implementation.name
     ; for_ = (type_name, args)
     ; functions
     ; constraints = Option.value ~default:[] constraints
@@ -206,40 +204,41 @@ let type_class_implementation :=
   }
 
 let type_class_impl :=
-  | "let"; name = located(ident); "="; value = expression; option(";;"); { { Type_class_implementation.Function_impl.name; value } }
+  | "let"; name = located(ident); "="; value = expression; option(";;"); { { Ast.Type_class_implementation.Function_impl.name; value } }
 
 (* Expressions *)
 
 let expression :=
-  | expr = one_expression; { ({ desc = expr; loc = $sloc } : Expression.t) }
+  | expr = one_expression; { expr }
   (* | "("; ~ = separated_list(";", one_expression); ")"; <Sequence> *)
 
 let one_expression :=
-  | ~ = literal; { Const literal }
+  | ~ = literal; { Const (literal, $sloc) }
   (* | "-"; ~ = expression; <Negative> *)
   (* | e1 = expression; ~ = binop; e2 = expression; { Binary (binop, e1, e2) } *)
-  | "{"; fields = separated_nonempty_list(";", expr_record_field); "}"; { Record fields }
+  | "{"; fields = separated_nonempty_list(";", expr_record_field); "}"; { Record (fields, $sloc) }
   (* We need some redundant indexing rules to work around shift/reduce conflicts. *)
   (* | element_type = type_id; "["; size = expression; "]"; "of"; init = expression;
     { Array { element_type; size; init } } *)
   (* | ~ = ident; "["; size = expression; "]"; ":="; ~ = expression; { Assign (Subscript (Ident ident, size), expression) } *)
   (* | ~ = ident; "["; size = expression; "]"; { Lvalue (Subscript (Ident ident, size)) } *)
   (* Regular lvalue rules. *)
-  | ~ = ident; <Var>
+  | ~ = ident; { Var(ident, $sloc) }
   (* | ~ = lvalue; ":="; ~ = expression; <Assign> *)
   (* | "if"; cond = expression; "then"; then_ = expression; "else"; else_ = expression; { If { cond; then_; else_ = Some else_ } }
   | "if"; cond = expression; "then"; then_ = expression; { If { cond; then_; else_ = None } }
   | "while"; cond = expression; "do"; body = expression; { While { cond; body } }
   | "for"; ~ = ident; ":="; lo = expression; "to"; hi = expression; "do"; body = expression; { For { ident; lo; hi; body } }
   | "break"; { Break } *)
-  | "let"; name = ident; "="; value = expression; "in"; in_ = expression; { Let { name; value; in_ } }
-  | constructor = located(constructor_name); ~ = expression; { Construct (constructor, Some expression) }
-  | constructor = located(constructor_name); { Construct (constructor, None) }
-  | func = ident; args = located(function_args); { Apply ({ desc = Var func; loc = $loc(func) }, args) }
-  | "("; ~ = expression; ")"; { expression.desc }
-  | "("; fst = expression; ","; args = separated_nonempty_list(",", expression); ")"; { Tuple (fst :: args) }
-  | "match"; scrutinee = expression; "with"; option("|"); cases = separated_nonempty_list("|", match_case); { Match { scrutinee; cases } }
-  | "fun"; "(" ; args = separated_list(",", ident); ")"; "->"; body = expression; { Lambda (args, body) }
+  | "let"; name = ident; "="; value = expression; "in"; in_ = expression; { Let { name; value; in_; annotation = $sloc } }
+  | constructor = constructor_name; ~ = expression; { Construct (((constructor, $loc(constructor)), Some expression), $sloc) }
+  | constructor = constructor_name; { Construct (((constructor , $loc(constructor)), None), $sloc) }
+  | func = ident; args = function_args; { Apply ((Var (func, $loc(func)), args), $sloc) }
+  | "("; ~ = expression; ")"; { expression }
+  | "("; ")"; { Tuple ([], $sloc) }
+  | "("; fst = expression; ","; args = separated_nonempty_list(",", expression); ")"; { Tuple (fst :: args, $sloc) }
+  | "match"; scrutinee = expression; "with"; option("|"); cases = separated_nonempty_list("|", match_case); { Match { scrutinee; cases; annotation = $sloc } }
+  | "fun"; "(" ; args = separated_list(",", ident); ")"; "->"; body = expression; { Ast.Expression.Lambda ((args, body), $sloc) }
 
 let function_args ==
   | "("; args = separated_list(",", expression); ")"; { args }
@@ -247,15 +246,12 @@ let function_args ==
 let match_case :=
   | ~ = pattern; "->"; ~ = expression; { (pattern, expression) }
 
-let pattern_desc :=
-  | constructor = located(constructor_name); ~ = pattern; { Pattern.Construct (constructor, Some pattern) }
-  | constructor = located(constructor_name); { Pattern.Construct (constructor, None) }
-  | ~ = located(ident); <Pattern.Var>
-  | "("; ~ = pattern_desc; ")"; { pattern_desc }
-  | "("; fst = pattern; ","; args = separated_nonempty_list(",", pattern); ")"; { Pattern.Tuple { value = fst :: args; loc = $sloc } }
-
 let pattern :=
-  | pattern = pattern_desc; { { Pattern.desc = pattern; loc = $sloc } }
+  | constructor = located(constructor_name); ~ = pattern; { Construct ((constructor, Some pattern), $sloc) }
+  | constructor = located(constructor_name); { Construct ((constructor, None), $sloc) }
+  | ~ = ident; { Var(ident, $sloc) }
+  | "("; ~ = pattern; ")"; { pattern }
+  | "("; fst = pattern; ","; args = separated_nonempty_list(",", pattern); ")"; { Ast.Pattern.Tuple (fst :: args, $sloc) }
 
 let expr_record_field :=
   | ~ = located(field_id); "="; ~ = expression; <>
@@ -276,8 +272,8 @@ let expr_record_field :=
 *)
 
 let literal ==
-  | ~ = "int"   ; <Const.Int>
-  | ~ = "string"; <Const.String>
+  | ~ = "int"   ; <Ast.Const.Int>
+  | ~ = "string"; <Ast.Const.String>
 
 (* Lvalues *)
 

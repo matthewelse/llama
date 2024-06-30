@@ -10,7 +10,7 @@ let%expect_test "int" =
       (values ((
         x (
           (quantifiers ())
-          (ty (Apply ((value int) (loc (:0:-1 :0:-1))) ()))
+          (body (Apply (((int (:0:-1 :0:-1)) ()) ())))
           (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
@@ -41,15 +41,16 @@ let%expect_test "option" =
       (values (
         (x (
           (quantifiers (3))
-          (ty (
-            Apply ((value option) (loc (<example>:2:4 <example>:2:40))) ((Var 3))))
+          (body (
+            Apply (((option (<example>:2:4 <example>:2:40)) ((Var (3 ())))) ())))
           (constraints ())))
         (y (
           (quantifiers ())
-          (ty (
-            Apply
-            ((value option) (loc (<example>:2:4 <example>:2:40)))
-            ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
+          (body (
+            Apply (
+              ((option (<example>:2:4 <example>:2:40))
+               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ())))
           (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
@@ -58,8 +59,8 @@ let%expect_test "option" =
           (shape (
             Variant
             (constructors (
-              (((value None) (loc (<example>:2:23 <example>:2:27))) ())
-              (((value Some) (loc (<example>:2:30 <example>:2:34))) ((Var 1)))))
+              ((None (<example>:2:23 <example>:2:27)) ())
+              ((Some (<example>:2:30 <example>:2:34)) ((Var (1 ()))))))
             (id 0)))
           (args (1))
           (loc (<example>:2:4 <example>:2:40))))
@@ -94,22 +95,24 @@ let%expect_test "list" =
       (values (
         (x (
           (quantifiers (3))
-          (ty (
-            Apply ((value list) (loc (<example>:2:4 <example>:2:47))) ((Var 3))))
+          (body (
+            Apply (((list (<example>:2:4 <example>:2:47)) ((Var (3 ())))) ())))
           (constraints ())))
         (y (
           (quantifiers ())
-          (ty (
-            Apply
-            ((value list) (loc (<example>:2:4 <example>:2:47)))
-            ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
+          (body (
+            Apply (
+              ((list (<example>:2:4 <example>:2:47))
+               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ())))
           (constraints ())))
         (z (
           (quantifiers ())
-          (ty (
-            Apply
-            ((value list) (loc (<example>:2:4 <example>:2:47)))
-            ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
+          (body (
+            Apply (
+              ((list (<example>:2:4 <example>:2:47))
+               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ())))
           (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
@@ -118,14 +121,14 @@ let%expect_test "list" =
           (shape (
             Variant
             (constructors (
-              (((value Nil) (loc (<example>:2:21 <example>:2:24))) ())
-              (((value Cons) (loc (<example>:2:27 <example>:2:31)))
+              ((Nil (<example>:2:21 <example>:2:24)) ())
+              ((Cons (<example>:2:27 <example>:2:31))
                ((
                  Tuple (
-                   (Var 1)
-                   (Apply
-                     ((value list) (loc (<example>:2:43 <example>:2:47)))
-                     ((Var 1)))))))))
+                   ((Var (1 ()))
+                    (Apply (
+                      ((list (<example>:2:43 <example>:2:47)) ((Var (1 ())))) ())))
+                   ()))))))
             (id 0)))
           (args (1))
           (loc (<example>:2:4 <example>:2:47))))
@@ -160,17 +163,19 @@ let%expect_test "list and options" =
       (values (
         (hd (
           (quantifiers ())
-          (ty (
-            Apply
-            ((value option) (loc (<example>:3:4 <example>:3:40)))
-            ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
+          (body (
+            Apply (
+              ((option (<example>:3:4 <example>:3:40))
+               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ())))
           (constraints ())))
         (x (
           (quantifiers ())
-          (ty (
-            Apply
-            ((value list) (loc (<example>:2:4 <example>:2:47)))
-            ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
+          (body (
+            Apply (
+              ((list (<example>:2:4 <example>:2:47))
+               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ())))
           (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
@@ -179,14 +184,14 @@ let%expect_test "list and options" =
           (shape (
             Variant
             (constructors (
-              (((value Nil) (loc (<example>:2:21 <example>:2:24))) ())
-              (((value Cons) (loc (<example>:2:27 <example>:2:31)))
+              ((Nil (<example>:2:21 <example>:2:24)) ())
+              ((Cons (<example>:2:27 <example>:2:31))
                ((
                  Tuple (
-                   (Var 1)
-                   (Apply
-                     ((value list) (loc (<example>:2:43 <example>:2:47)))
-                     ((Var 1)))))))))
+                   ((Var (1 ()))
+                    (Apply (
+                      ((list (<example>:2:43 <example>:2:47)) ((Var (1 ())))) ())))
+                   ()))))))
             (id 0)))
           (args (1))
           (loc (<example>:2:4 <example>:2:47))))
@@ -194,8 +199,8 @@ let%expect_test "list and options" =
           (shape (
             Variant
             (constructors (
-              (((value None) (loc (<example>:3:23 <example>:3:27))) ())
-              (((value Some) (loc (<example>:3:30 <example>:3:34))) ((Var 2)))))
+              ((None (<example>:3:23 <example>:3:27)) ())
+              ((Some (<example>:3:30 <example>:3:34)) ((Var (2 ()))))))
             (id 1)))
           (args (2))
           (loc (<example>:3:4 <example>:3:40))))
@@ -227,24 +232,25 @@ let%expect_test "tuple" =
       (values ((
         x (
           (quantifiers ())
-          (ty (
+          (body (
             Tuple (
-              (Apply ((value a) (loc (<example>:2:4 <example>:2:16))) ())
-              (Apply ((value b) (loc (<example>:3:4 <example>:3:16))) ())
-              (Apply ((value c) (loc (<example>:4:4 <example>:4:16))) ()))))
+              ((Apply (((a (<example>:2:4 <example>:2:16)) ()) ()))
+               (Apply (((b (<example>:3:4 <example>:3:16)) ()) ()))
+               (Apply (((c (<example>:4:4 <example>:4:16)) ()) ())))
+              ())))
           (constraints ())))))
       (type_declarations (
         (a (
           (shape (
             Variant
-            (constructors ((((value A) (loc (<example>:2:15 <example>:2:16))) ())))
+            (constructors (((A (<example>:2:15 <example>:2:16)) ())))
             (id 0)))
           (args ())
           (loc (<example>:2:4 <example>:2:16))))
         (b (
           (shape (
             Variant
-            (constructors ((((value B) (loc (<example>:3:15 <example>:3:16))) ())))
+            (constructors (((B (<example>:3:15 <example>:3:16)) ())))
             (id 1)))
           (args ())
           (loc (<example>:3:4 <example>:3:16))))
@@ -252,7 +258,7 @@ let%expect_test "tuple" =
         (c (
           (shape (
             Variant
-            (constructors ((((value C) (loc (<example>:4:15 <example>:4:16))) ())))
+            (constructors (((C (<example>:4:15 <example>:4:16)) ())))
             (id 2)))
           (args ())
           (loc (<example>:4:4 <example>:4:16))))
@@ -280,11 +286,11 @@ let%expect_test "variables" =
       (values (
         (x (
           (quantifiers ())
-          (ty (Apply ((value int) (loc (:0:-1 :0:-1))) ()))
+          (body (Apply (((int (:0:-1 :0:-1)) ()) ())))
           (constraints ())))
         (y (
           (quantifiers ())
-          (ty (Apply ((value int) (loc (:0:-1 :0:-1))) ()))
+          (body (Apply (((int (:0:-1 :0:-1)) ()) ())))
           (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
@@ -313,15 +319,16 @@ let%expect_test "let _ = _ in _" =
       (values (
         (int_add (
           (quantifiers ())
-          (ty (
-            Fun
-            ((Apply ((value int) (loc (<example>:2:22 <example>:2:25))) ())
-             (Apply ((value int) (loc (<example>:2:29 <example>:2:32))) ()))
-            (Apply ((value int) (loc (<example>:2:36 <example>:2:39))) ())))
+          (body (
+            Fun (
+              (((Apply (((int (<example>:2:22 <example>:2:25)) ()) ()))
+                (Apply (((int (<example>:2:29 <example>:2:32)) ()) ())))
+               (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
+              ())))
           (constraints ())))
         (y (
           (quantifiers ())
-          (ty (Apply ((value int) (loc (<example>:2:36 <example>:2:39))) ()))
+          (body (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
           (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
@@ -355,23 +362,25 @@ let%expect_test "lambdas" =
       (values (
         (add_twice (
           (quantifiers ())
-          (ty (
-            Fun
-            ((Apply ((value int) (loc (<example>:2:22 <example>:2:25))) ())
-             (Apply ((value int) (loc (<example>:2:29 <example>:2:32))) ()))
-            (Apply ((value int) (loc (<example>:2:36 <example>:2:39))) ())))
+          (body (
+            Fun (
+              (((Apply (((int (<example>:2:22 <example>:2:25)) ()) ()))
+                (Apply (((int (<example>:2:29 <example>:2:32)) ()) ())))
+               (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
+              ())))
           (constraints ())))
         (int_add (
           (quantifiers ())
-          (ty (
-            Fun
-            ((Apply ((value int) (loc (<example>:2:22 <example>:2:25))) ())
-             (Apply ((value int) (loc (<example>:2:29 <example>:2:32))) ()))
-            (Apply ((value int) (loc (<example>:2:36 <example>:2:39))) ())))
+          (body (
+            Fun (
+              (((Apply (((int (<example>:2:22 <example>:2:25)) ()) ()))
+                (Apply (((int (<example>:2:29 <example>:2:32)) ()) ())))
+               (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
+              ())))
           (constraints ())))
         (y (
           (quantifiers ())
-          (ty (Apply ((value int) (loc (<example>:2:36 <example>:2:39))) ()))
+          (body (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
           (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
@@ -415,46 +424,50 @@ let%expect_test "polymorphism" =
       (values (
         (a (
           (quantifiers ())
-          (ty (
-            Apply
-            ((value option) (loc (<example>:2:6 <example>:2:42)))
-            ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
+          (body (
+            Apply (
+              ((option (<example>:2:6 <example>:2:42))
+               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ())))
           (constraints ())))
         (hd (
           (quantifiers (5))
-          (ty (
-            Fun
-            ((
-              Apply
-              ((value list) (loc (<example>:7:10 <example>:7:13)))
-              ((Var 5))))
-            (Apply
-              ((value option) (loc (<example>:2:6 <example>:2:42)))
-              ((Var 5)))))
+          (body (
+            Fun (
+              (((
+                 Apply (
+                   ((list (<example>:7:10 <example>:7:13)) ((Var (5 ())))) ())))
+               (Apply (
+                 ((option (<example>:2:6 <example>:2:42)) ((Var (5 ())))) ())))
+              ())))
           (constraints ())))
         (x (
           (quantifiers ())
-          (ty (
-            Apply
-            ((value option) (loc (<example>:2:6 <example>:2:42)))
-            ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
+          (body (
+            Apply (
+              ((option (<example>:2:6 <example>:2:42))
+               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ())))
           (constraints ())))
         (y (
           (quantifiers ())
-          (ty (
-            Apply
-            ((value option) (loc (<example>:2:6 <example>:2:42)))
-            ((
-              Apply
-              ((value option) (loc (<example>:2:6 <example>:2:42)))
-              ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))))
+          (body (
+            Apply (
+              ((option (<example>:2:6 <example>:2:42))
+               ((
+                 Apply (
+                   ((option (<example>:2:6 <example>:2:42))
+                    ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+                   ()))))
+              ())))
           (constraints ())))
         (z (
           (quantifiers ())
-          (ty (
-            Apply
-            ((value list) (loc (<example>:3:6 <example>:3:49)))
-            ((Apply ((value int) (loc (:0:-1 :0:-1))) ()))))
+          (body (
+            Apply (
+              ((list (<example>:3:6 <example>:3:49))
+               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ())))
           (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
@@ -463,14 +476,14 @@ let%expect_test "polymorphism" =
           (shape (
             Variant
             (constructors (
-              (((value Nil) (loc (<example>:3:23 <example>:3:26))) ())
-              (((value Cons) (loc (<example>:3:29 <example>:3:33)))
+              ((Nil (<example>:3:23 <example>:3:26)) ())
+              ((Cons (<example>:3:29 <example>:3:33))
                ((
                  Tuple (
-                   (Var 2)
-                   (Apply
-                     ((value list) (loc (<example>:3:45 <example>:3:49)))
-                     ((Var 2)))))))))
+                   ((Var (2 ()))
+                    (Apply (
+                      ((list (<example>:3:45 <example>:3:49)) ((Var (2 ())))) ())))
+                   ()))))))
             (id 1)))
           (args (2))
           (loc (<example>:3:6 <example>:3:49))))
@@ -478,8 +491,8 @@ let%expect_test "polymorphism" =
           (shape (
             Variant
             (constructors (
-              (((value None) (loc (<example>:2:25 <example>:2:29))) ())
-              (((value Some) (loc (<example>:2:32 <example>:2:36))) ((Var 1)))))
+              ((None (<example>:2:25 <example>:2:29)) ())
+              ((Some (<example>:2:32 <example>:2:36)) ((Var (1 ()))))))
             (id 0)))
           (args (1))
           (loc (<example>:2:6 <example>:2:42))))
@@ -591,18 +604,20 @@ let%expect_test "recursive functions" =
       (values (
         (int_add (
           (quantifiers ())
-          (ty (
-            Fun
-            ((Apply ((value int) (loc (<example>:4:22 <example>:4:25))) ())
-             (Apply ((value int) (loc (<example>:4:29 <example>:4:32))) ()))
-            (Apply ((value int) (loc (<example>:4:36 <example>:4:39))) ())))
+          (body (
+            Fun (
+              (((Apply (((int (<example>:4:22 <example>:4:25)) ()) ()))
+                (Apply (((int (<example>:4:29 <example>:4:32)) ()) ())))
+               (Apply (((int (<example>:4:36 <example>:4:39)) ()) ())))
+              ())))
           (constraints ())))
         (len (
           (quantifiers (4))
-          (ty (
-            Fun
-            ((Apply ((value list) (loc (<example>:8:6 <example>:8:9))) ((Var 4))))
-            (Apply ((value int) (loc (:0:-1 :0:-1))) ())))
+          (body (
+            Fun (
+              (((Apply (((list (<example>:8:6 <example>:8:9)) ((Var (4 ())))) ())))
+               (Apply (((int (:0:-1 :0:-1)) ()) ())))
+              ())))
           (constraints ())))))
       (type_declarations (
         (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
@@ -611,14 +626,14 @@ let%expect_test "recursive functions" =
           (shape (
             Variant
             (constructors (
-              (((value Nil) (loc (<example>:2:19 <example>:2:22))) ())
-              (((value Cons) (loc (<example>:2:25 <example>:2:29)))
+              ((Nil (<example>:2:19 <example>:2:22)) ())
+              ((Cons (<example>:2:25 <example>:2:29))
                ((
                  Tuple (
-                   (Var 1)
-                   (Apply
-                     ((value list) (loc (<example>:2:41 <example>:2:45)))
-                     ((Var 1)))))))))
+                   ((Var (1 ()))
+                    (Apply (
+                      ((list (<example>:2:41 <example>:2:45)) ((Var (1 ())))) ())))
+                   ()))))))
             (id 0)))
           (args (1))
           (loc (<example>:2:2 <example>:2:45))))

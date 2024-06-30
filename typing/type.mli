@@ -15,22 +15,23 @@ module Id : sig
   include Unique_id.Id with type t := t
 end
 
-type 'var t_generic =
-  | Var of 'var
-  | Apply of Type_name.t Located.t * 'var t_generic list
-  | Fun of 'var t_generic list * 'var t_generic
-  | Tuple of 'var t_generic list
-[@@deriving variants]
+module A : sig
+  type apply = unit [@@deriving sexp_of]
+  type fun_ = unit [@@deriving sexp_of]
+  type tuple = unit [@@deriving sexp_of]
+  type type_constructor = Span.t [@@deriving sexp_of]
+  type var = unit [@@deriving sexp_of]
+end
 
-type t = Var.t t_generic [@@deriving sexp_of]
+include Base_ast.Type.S with module Type_var := Var and module A := A
 
+val var : Var.t -> t
 val of_ast : Ast.Type.t -> var_mapping:Var.t String.Map.t -> t
-val intrinsic : Intrinsic.Type.t -> t
 
 module Constraint : sig
   type ty := t
 
-  type t =
+  type t = Constraint.t =
     { type_class : Type_class_name.t
     ; arg : ty
     }
@@ -41,9 +42,9 @@ module Poly : sig
   type ty := t
 
   (** forall [quantifiers]. [constraints] => [ty] *)
-  type t =
-    { quantifiers : Var.Set.t
-    ; ty : ty
+  type t = Poly.t =
+    { quantifiers : Var.t list
+    ; body : ty
     ; constraints : Constraint.t list
     }
   [@@deriving sexp_of]
@@ -67,11 +68,11 @@ module Constructor : sig
     type t =
       | Intrinsic of Intrinsic.Type.t
       | Record of
-          { fields : (Field_name.t Located.t * ty) list
+          { fields : ((Field_name.t * Span.t) * ty) list
           ; id : Id.t
           }
       | Variant of
-          { constructors : (Constructor.t Located.t * ty option) list
+          { constructors : ((Constructor.t * Span.t) * ty option) list
           ; id : Id.t
           }
     [@@deriving sexp_of]
@@ -87,9 +88,10 @@ end
 
 val occurs : t -> var:Var.t -> bool
 val free_type_vars : t -> Var.Set.t
+val intrinsic : ?loc:Span.t -> Intrinsic.Type.t -> t
 
 (** [const name] is a type with no type parameters. *)
-val const : Type_name.t Located.t -> t
+val const : Type_name.t * Span.t -> t
 
 val generalize : t -> env:Poly.t Ident.Map.t -> Poly.t
 val subst : t -> replacements:t Var.Map.t -> t

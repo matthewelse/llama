@@ -66,15 +66,11 @@ let type_class t name ~loc =
 
 let with_fields t fields ~type_name =
   let%bind.Result fields =
-    List.fold_result
-      fields
-      ~init:t.fields
-      ~f:(fun fields ({ Located.value = name; loc }, _) ->
-        match Map.add fields ~key:name ~data:type_name with
-        | `Ok fields -> Ok fields
-        | `Duplicate ->
-          Error
-            (Type_error.of_string ~loc [%string "Duplicate field [%{name#Field_name}]"]))
+    List.fold_result fields ~init:t.fields ~f:(fun fields ((name, loc), _) ->
+      match Map.add fields ~key:name ~data:type_name with
+      | `Ok fields -> Ok fields
+      | `Duplicate ->
+        Error (Type_error.of_string ~loc [%string "Duplicate field [%{name#Field_name}]"]))
   in
   Ok { t with fields }
 ;;
@@ -84,7 +80,7 @@ let with_constructors t constructors ~type_name =
     List.fold_result
       constructors
       ~init:t.constructors
-      ~f:(fun constructors ({ Located.value = name; loc }, _) ->
+      ~f:(fun constructors ((name, loc), _) ->
         match Map.add constructors ~key:name ~data:type_name with
         | `Ok fields -> Ok fields
         | `Duplicate ->
@@ -106,7 +102,7 @@ let with_vars t vars =
       Map.set
         env
         ~key:name
-        ~data:{ ty = Var var; quantifiers = Type.Var.Set.empty; constraints = [] })
+        ~data:{ body = Var (var, ()); quantifiers = []; constraints = [] })
   in
   { t with values }
 ;;

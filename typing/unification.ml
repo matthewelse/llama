@@ -6,8 +6,8 @@ let debug = false
 let error ~annotations:(primary :: _ : Constraints.Annotations.t) message =
   let loc =
     match primary with
-    | Expression_should_have_type (expr, _) -> expr.loc
-    | Pattern_should_have_type (pat, _) -> pat.loc
+    | Expression_should_have_type (expr, _) -> Expression.loc expr
+    | Pattern_should_have_type (pat, _) -> Pattern.loc pat
     | Var_requires_type_class (ident, _) -> ident.loc
   in
   Type_error.error_string ~loc message
@@ -41,22 +41,22 @@ struct
   let rec normalize_ty t (ty : Type.t) ~env =
     let open Result.Let_syntax in
     match ty with
-    | Var v ->
+    | Var (v, _) ->
       (match Lookup.var t v with
        | Var _ as ty -> Ok ty
        | ty ->
          if debug then print_s [%message "normalising" (v : Type.Var.t) (ty : Type.t)];
          normalize_ty t ty ~env)
-    | Apply (name, args) ->
+    | Apply ((name, args), annot) ->
       let%bind args = List.map args ~f:(normalize_ty t ~env) |> Result.all in
-      Ok (Type.Apply (name, args))
-    | Fun (args, result) ->
+      Ok (Type.Apply ((name, args), annot))
+    | Fun ((args, result), annot) ->
       let%bind args = List.map ~f:(normalize_ty t ~env) args |> Result.all in
       let%bind result = normalize_ty t result ~env in
-      Ok (Type.Fun (args, result))
-    | Tuple types ->
+      Ok (Type.Fun ((args, result), annot))
+    | Tuple (types, annot) ->
       let%bind types = List.map types ~f:(normalize_ty t ~env) |> Result.all in
-      Ok (Type.Tuple types)
+      Ok (Type.Tuple (types, annot))
   ;;
 
   let rec unify_ty_ty t ty1 ty2 ~env ~annotations =
@@ -66,7 +66,7 @@ struct
     let%bind ty1 = normalize_ty t ty1 ~env in
     let%bind ty2 = normalize_ty t ty2 ~env in
     match ty1, ty2 with
-    | Fun (args_left, result_left), Fun (args_right, result_right) ->
+    | Fun ((args_left, result_left), _), Fun ((args_right, result_right), _) ->
       let%bind () =
         iter2_result args_left args_right ~f:(fun arg_left arg_right ->
           unify_ty_ty t arg_left arg_right ~env ~annotations)
@@ -80,7 +80,7 @@ struct
                  expected."])
       in
       unify_ty_ty t result_left result_right ~env ~annotations
-    | Tuple t1s, Tuple t2s ->
+    | Tuple (t1s, _), Tuple (t2s, _) ->
       iter2_result t1s t2s ~f:(fun ty1 ty2 -> unify_ty_ty t ty1 ty2 ~env ~annotations)
       |> Result.map_error ~f:(function
         | `Error err -> err
@@ -88,17 +88,16 @@ struct
           Type_error.of_string
             ~loc
             [%string "Tuple arguments had different number of members."])
-    | Apply (name1, args1), Apply (name2, args2) ->
+    | Apply (((name1, name1_loc), args1), _), Apply (((name2, _), args2), _) ->
       let%bind () =
         (* FIXME: follow type aliases *)
-        if Type_name.equal name1.value name2.value
+        if Type_name.equal name1 name2
         then Ok ()
         else
           Type_error.error_string
             ~loc:(* FIXME: which one is the one we care about? *)
-                 name1.loc
-            [%string
-              "Types %{name1.value#Type_name} and %{name2.value#Type_name} are not equal."]
+                 name1_loc
+            [%string "Types %{name1#Type_name} and %{name2#Type_name} are not equal."]
       in
       iter2_result args1 args2 ~f:(fun ty1 ty2 -> unify_ty_ty t ty1 ty2 ~env ~annotations)
       |> Result.map_error ~f:(function
@@ -107,10 +106,10 @@ struct
           Type_error.of_string
             ~loc
             [%string "Tuple arguments had different number of members."])
-    | Var v1, Var v2 ->
+    | Var (v1, _), Var (v2, _) ->
       Lookup.unify_var_var t v1 v2;
       Ok ()
-    | Var v, ty | ty, Var v ->
+    | Var (v, _), ty | ty, Var (v, _) ->
       if Type.occurs ty ~var:v
       then
         Type_error.error_string

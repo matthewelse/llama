@@ -36,13 +36,13 @@ val type_class
 
 val with_constructors
   :  t
-  -> (Constructor.t Located.t * _) list
+  -> ((Constructor.t * Span.t) * _) list
   -> type_name:Type_name.t
   -> (t, Type_error.t) result
 
 val with_fields
   :  t
-  -> (Field_name.t Located.t * _) list
+  -> ((Field_name.t * Span.t) * _) list
   -> type_name:Type_name.t
   -> (t, Type_error.t) result
 

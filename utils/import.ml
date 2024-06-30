@@ -3,9 +3,9 @@ include Llama_common
 include struct
   open Llama_frontend
   module Ast = Ast
-  module Expression = Expression
+  module Expression = Ast.Expression
   module Located = Located
-  module Pattern = Pattern
+  module Pattern = Ast.Pattern
 end
 
 include struct

@@ -5,6 +5,7 @@ include struct
   module Constructor = Constructor
   module Ident = Ident
   module Intrinsic = Intrinsic
+  module Span = Span
   module Type_class_name = Type_class_name
   module Type_name = Type_name
 end
@@ -12,9 +13,8 @@ end
 include struct
   open Llama_frontend
   module Ast = Ast
-  module Expression = Expression
+  module Expression = Ast.Expression
   module Located = Located
-  module Span = Span
 end
 
 include struct
