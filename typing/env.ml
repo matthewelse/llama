@@ -20,7 +20,7 @@ let empty () =
         , { Type.Constructor.shape = Intrinsic intrinsic
           ; args =
               List.init (Intrinsic.Type.arity intrinsic) ~f:(fun _ -> Type.Var.create ())
-          ; loc = Span.dummy
+          ; loc = `Built_in
           } ))
       |> Type_name.Map.of_alist_exn
   ; constructors = Constructor.Map.empty

@@ -3,11 +3,13 @@
  (libraries
   async
   core
-  diagnostics
+  asai
   file_path
   linenoise
+  llama_common
   llama_frontend
-  llama_utils)
+  llama_utils
+  menhirSdk)
  (preprocess
   (pps ppx_jane))
  ;;

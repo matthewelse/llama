@@ -3,7 +3,7 @@ open! Import
 
 type t =
   { message : string
-  ; primary_location : Source_code_position.t * Source_code_position.t
+  ; primary_location : Span.t
   }
 [@@deriving sexp_of]
 

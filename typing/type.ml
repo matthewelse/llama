@@ -7,7 +7,13 @@ module A = struct
   type apply = unit [@@deriving sexp_of]
   type fun_ = unit [@@deriving sexp_of]
   type tuple = unit [@@deriving sexp_of]
-  type type_constructor = Span.t [@@deriving sexp_of]
+
+  type type_constructor =
+    [ `Built_in
+    | `Position of Span.t
+    ]
+  [@@deriving sexp_of]
+
   type var = unit [@@deriving sexp_of]
 end
 
@@ -26,7 +32,7 @@ let exists_free_type_var t ~f =
 
 let const t = Apply ((t, []), ())
 
-let intrinsic ?(loc = Span.dummy) name =
+let intrinsic ?(loc = `Built_in) name =
   Apply (((Intrinsic.Type.type_name name, loc), []), ())
 ;;
 
@@ -52,7 +58,8 @@ let rec subst t ~replacements =
 let rec of_ast (t : Ast.Type.t) ~var_mapping =
   match t with
   | Var (v, _) -> Var (Map.find_exn var_mapping v, ())
-  | Apply ((name, ts), _) -> Apply ((name, List.map ts ~f:(of_ast ~var_mapping)), ())
+  | Apply (((name, name_pos), ts), _) ->
+    Apply (((name, `Position name_pos), List.map ts ~f:(of_ast ~var_mapping)), ())
   | Fun ((args, r), _) ->
     Fun ((List.map args ~f:(of_ast ~var_mapping), of_ast r ~var_mapping), ())
   | Tuple (ts, _) -> Tuple (List.map ts ~f:(of_ast ~var_mapping), ())
@@ -134,7 +141,7 @@ module Constructor = struct
   type t =
     { shape : Shape.t
     ; args : Var.t list
-    ; loc : Span.t
+    ; loc : [ `Built_in | `Position of Span.t ]
     }
   [@@deriving sexp_of]
 end

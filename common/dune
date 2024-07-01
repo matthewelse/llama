@@ -1,6 +1,6 @@
 (library
  (name llama_common)
- (libraries core)
+ (libraries asai core)
  (inline_tests)
  (preprocess
   (pps ppx_jane)))

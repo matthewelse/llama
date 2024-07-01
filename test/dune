@@ -1,8 +1,8 @@
 (library
  (name test_llama)
  (libraries
+  asai
   core
-  diagnostics
   expect_test_helpers_core
   llama_typing
   llama_frontend

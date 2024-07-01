@@ -10,13 +10,13 @@ let%expect_test "int" =
       (values ((
         x (
           (quantifiers ())
-          (body (Apply (((int (:0:-1 :0:-1)) ()) ())))
+          (body (Apply (((int Built_in) ()) ())))
           (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors               ())
       (fields                     ())
       (type_classes               ())
@@ -42,19 +42,21 @@ let%expect_test "option" =
         (x (
           (quantifiers (3))
           (body (
-            Apply (((option (<example>:2:4 <example>:2:40)) ((Var (3 ())))) ())))
+            Apply (
+              ((option (Position (<example>:2:4 <example>:2:40))) ((Var (3 ()))))
+              ())))
           (constraints ())))
         (y (
           (quantifiers ())
           (body (
             Apply (
-              ((option (<example>:2:4 <example>:2:40))
-               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ((option (Position (<example>:2:4 <example>:2:40)))
+               ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
         (option (
           (shape (
             Variant
@@ -63,9 +65,9 @@ let%expect_test "option" =
               ((Some (<example>:2:30 <example>:2:34)) ((Var (1 ()))))))
             (id 0)))
           (args (1))
-          (loc (<example>:2:4 <example>:2:40))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+          (loc (Position (<example>:2:4 <example>:2:40)))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors (
         (None option)
         (Some option)))
@@ -96,27 +98,29 @@ let%expect_test "list" =
         (x (
           (quantifiers (3))
           (body (
-            Apply (((list (<example>:2:4 <example>:2:47)) ((Var (3 ())))) ())))
+            Apply (
+              ((list (Position (<example>:2:4 <example>:2:47))) ((Var (3 ()))))
+              ())))
           (constraints ())))
         (y (
           (quantifiers ())
           (body (
             Apply (
-              ((list (<example>:2:4 <example>:2:47))
-               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ((list (Position (<example>:2:4 <example>:2:47)))
+               ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))
         (z (
           (quantifiers ())
           (body (
             Apply (
-              ((list (<example>:2:4 <example>:2:47))
-               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ((list (Position (<example>:2:4 <example>:2:47)))
+               ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
         (list (
           (shape (
             Variant
@@ -127,13 +131,15 @@ let%expect_test "list" =
                  Tuple (
                    ((Var (1 ()))
                     (Apply (
-                      ((list (<example>:2:43 <example>:2:47)) ((Var (1 ())))) ())))
+                      ((list (Position (<example>:2:43 <example>:2:47)))
+                       ((Var (1 ()))))
+                      ())))
                    ()))))))
             (id 0)))
           (args (1))
-          (loc (<example>:2:4 <example>:2:47))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+          (loc (Position (<example>:2:4 <example>:2:47)))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors (
         (Cons list)
         (Nil  list)))
@@ -165,21 +171,21 @@ let%expect_test "list and options" =
           (quantifiers ())
           (body (
             Apply (
-              ((option (<example>:3:4 <example>:3:40))
-               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ((option (Position (<example>:3:4 <example>:3:40)))
+               ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))
         (x (
           (quantifiers ())
           (body (
             Apply (
-              ((list (<example>:2:4 <example>:2:47))
-               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ((list (Position (<example>:2:4 <example>:2:47)))
+               ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
         (list (
           (shape (
             Variant
@@ -190,11 +196,13 @@ let%expect_test "list and options" =
                  Tuple (
                    ((Var (1 ()))
                     (Apply (
-                      ((list (<example>:2:43 <example>:2:47)) ((Var (1 ())))) ())))
+                      ((list (Position (<example>:2:43 <example>:2:47)))
+                       ((Var (1 ()))))
+                      ())))
                    ()))))))
             (id 0)))
           (args (1))
-          (loc (<example>:2:4 <example>:2:47))))
+          (loc (Position (<example>:2:4 <example>:2:47)))))
         (option (
           (shape (
             Variant
@@ -203,9 +211,9 @@ let%expect_test "list and options" =
               ((Some (<example>:3:30 <example>:3:34)) ((Var (2 ()))))))
             (id 1)))
           (args (2))
-          (loc (<example>:3:4 <example>:3:40))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+          (loc (Position (<example>:3:4 <example>:3:40)))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors (
         (Cons list)
         (Nil  list)
@@ -234,9 +242,9 @@ let%expect_test "tuple" =
           (quantifiers ())
           (body (
             Tuple (
-              ((Apply (((a (<example>:2:4 <example>:2:16)) ()) ()))
-               (Apply (((b (<example>:3:4 <example>:3:16)) ()) ()))
-               (Apply (((c (<example>:4:4 <example>:4:16)) ()) ())))
+              ((Apply (((a (Position (<example>:2:4 <example>:2:16))) ()) ()))
+               (Apply (((b (Position (<example>:3:4 <example>:3:16))) ()) ()))
+               (Apply (((c (Position (<example>:4:4 <example>:4:16))) ()) ())))
               ())))
           (constraints ())))))
       (type_declarations (
@@ -246,25 +254,25 @@ let%expect_test "tuple" =
             (constructors (((A (<example>:2:15 <example>:2:16)) ())))
             (id 0)))
           (args ())
-          (loc (<example>:2:4 <example>:2:16))))
+          (loc (Position (<example>:2:4 <example>:2:16)))))
         (b (
           (shape (
             Variant
             (constructors (((B (<example>:3:15 <example>:3:16)) ())))
             (id 1)))
           (args ())
-          (loc (<example>:3:4 <example>:3:16))))
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
+          (loc (Position (<example>:3:4 <example>:3:16)))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
         (c (
           (shape (
             Variant
             (constructors (((C (<example>:4:15 <example>:4:16)) ())))
             (id 2)))
           (args ())
-          (loc (<example>:4:4 <example>:4:16))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+          (loc (Position (<example>:4:4 <example>:4:16)))))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors (
         (A a)
         (B b)
@@ -286,17 +294,17 @@ let%expect_test "variables" =
       (values (
         (x (
           (quantifiers ())
-          (body (Apply (((int (:0:-1 :0:-1)) ()) ())))
+          (body (Apply (((int Built_in) ()) ())))
           (constraints ())))
         (y (
           (quantifiers ())
-          (body (Apply (((int (:0:-1 :0:-1)) ()) ())))
+          (body (Apply (((int Built_in) ()) ())))
           (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors               ())
       (fields                     ())
       (type_classes               ())
@@ -321,20 +329,20 @@ let%expect_test "let _ = _ in _" =
           (quantifiers ())
           (body (
             Fun (
-              (((Apply (((int (<example>:2:22 <example>:2:25)) ()) ()))
-                (Apply (((int (<example>:2:29 <example>:2:32)) ()) ())))
-               (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
+              (((Apply (((int (Position (<example>:2:22 <example>:2:25))) ()) ()))
+                (Apply (((int (Position (<example>:2:29 <example>:2:32))) ()) ())))
+               (Apply (((int (Position (<example>:2:36 <example>:2:39))) ()) ())))
               ())))
           (constraints ())))
         (y (
           (quantifiers ())
-          (body (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
+          (body (Apply (((int (Position (<example>:2:36 <example>:2:39))) ()) ())))
           (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors               ())
       (fields                     ())
       (type_classes               ())
@@ -364,29 +372,29 @@ let%expect_test "lambdas" =
           (quantifiers ())
           (body (
             Fun (
-              (((Apply (((int (<example>:2:22 <example>:2:25)) ()) ()))
-                (Apply (((int (<example>:2:29 <example>:2:32)) ()) ())))
-               (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
+              (((Apply (((int (Position (<example>:2:22 <example>:2:25))) ()) ()))
+                (Apply (((int (Position (<example>:2:29 <example>:2:32))) ()) ())))
+               (Apply (((int (Position (<example>:2:36 <example>:2:39))) ()) ())))
               ())))
           (constraints ())))
         (int_add (
           (quantifiers ())
           (body (
             Fun (
-              (((Apply (((int (<example>:2:22 <example>:2:25)) ()) ()))
-                (Apply (((int (<example>:2:29 <example>:2:32)) ()) ())))
-               (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
+              (((Apply (((int (Position (<example>:2:22 <example>:2:25))) ()) ()))
+                (Apply (((int (Position (<example>:2:29 <example>:2:32))) ()) ())))
+               (Apply (((int (Position (<example>:2:36 <example>:2:39))) ()) ())))
               ())))
           (constraints ())))
         (y (
           (quantifiers ())
-          (body (Apply (((int (<example>:2:36 <example>:2:39)) ()) ())))
+          (body (Apply (((int (Position (<example>:2:36 <example>:2:39))) ()) ())))
           (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors               ())
       (fields                     ())
       (type_classes               ())
@@ -426,8 +434,8 @@ let%expect_test "polymorphism" =
           (quantifiers ())
           (body (
             Apply (
-              ((option (<example>:2:6 <example>:2:42))
-               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ((option (Position (<example>:2:6 <example>:2:42)))
+               ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))
         (hd (
@@ -436,28 +444,32 @@ let%expect_test "polymorphism" =
             Fun (
               (((
                  Apply (
-                   ((list (<example>:7:10 <example>:7:13)) ((Var (5 ())))) ())))
+                   ((list (Position (<example>:7:10 <example>:7:13)))
+                    ((Var (5 ()))))
+                   ())))
                (Apply (
-                 ((option (<example>:2:6 <example>:2:42)) ((Var (5 ())))) ())))
+                 ((option (Position (<example>:2:6 <example>:2:42)))
+                  ((Var (5 ()))))
+                 ())))
               ())))
           (constraints ())))
         (x (
           (quantifiers ())
           (body (
             Apply (
-              ((option (<example>:2:6 <example>:2:42))
-               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ((option (Position (<example>:2:6 <example>:2:42)))
+               ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))
         (y (
           (quantifiers ())
           (body (
             Apply (
-              ((option (<example>:2:6 <example>:2:42))
+              ((option (Position (<example>:2:6 <example>:2:42)))
                ((
                  Apply (
-                   ((option (<example>:2:6 <example>:2:42))
-                    ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+                   ((option (Position (<example>:2:6 <example>:2:42)))
+                    ((Apply (((int Built_in) ()) ()))))
                    ()))))
               ())))
           (constraints ())))
@@ -465,13 +477,13 @@ let%expect_test "polymorphism" =
           (quantifiers ())
           (body (
             Apply (
-              ((list (<example>:3:6 <example>:3:49))
-               ((Apply (((int (:0:-1 :0:-1)) ()) ()))))
+              ((list (Position (<example>:3:6 <example>:3:49)))
+               ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
         (list (
           (shape (
             Variant
@@ -482,11 +494,13 @@ let%expect_test "polymorphism" =
                  Tuple (
                    ((Var (2 ()))
                     (Apply (
-                      ((list (<example>:3:45 <example>:3:49)) ((Var (2 ())))) ())))
+                      ((list (Position (<example>:3:45 <example>:3:49)))
+                       ((Var (2 ()))))
+                      ())))
                    ()))))))
             (id 1)))
           (args (2))
-          (loc (<example>:3:6 <example>:3:49))))
+          (loc (Position (<example>:3:6 <example>:3:49)))))
         (option (
           (shape (
             Variant
@@ -495,9 +509,9 @@ let%expect_test "polymorphism" =
               ((Some (<example>:2:32 <example>:2:36)) ((Var (1 ()))))))
             (id 0)))
           (args (1))
-          (loc (<example>:2:6 <example>:2:42))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+          (loc (Position (<example>:2:6 <example>:2:42)))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors (
         (Cons list)
         (Nil  list)
@@ -524,11 +538,9 @@ let%expect_test "value restriction" =
   |};
   [%expect
     {|
-    error[EXXXX]: Type Error
-       ╭─[<example>:2:2]
-     2 │   type 'a option = | None | Some of 'a
-       ┆   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Types option and int are not equal.
-    ───╯
+    ￫ error[E002]
+    10 |   let z = ref_set (x, (Some None))
+       ^ Types option and int are not equal.
     |}]
 ;;
 
@@ -549,11 +561,9 @@ let%expect_test "don't allow a ref to be set to two different types" =
   |};
   [%expect
     {|
-    error[EXXXX]: Type Error
-       ╭─[<example>:2:2]
-     2 │   type 'a option = | None | Some of 'a
-       ┆   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Types option and int are not equal.
-    ───╯
+    ￫ error[E002]
+    9 |     let a = ref_set (y, Some 10) in
+      ^ Types option and int are not equal.
     |}]
 ;;
 
@@ -578,11 +588,9 @@ let%expect_test "don't allow different branches of a match statement to have dif
      v}*)
   [%expect
     {|
-    error[EXXXX]: Type Error
-      ╭─[<example>:3:44]
-    3 │   type 'a list   = | Nil  | Cons of 'a * 'a list
-      ┆                                             ^^^^ Types list and option are not equal.
-    ──╯
+    ￫ error[E002]
+    8 |     | Cons (x, y) -> (Some x, y)
+      ^ Types list and option are not equal.
     |}]
 ;;
 
@@ -606,22 +614,26 @@ let%expect_test "recursive functions" =
           (quantifiers ())
           (body (
             Fun (
-              (((Apply (((int (<example>:4:22 <example>:4:25)) ()) ()))
-                (Apply (((int (<example>:4:29 <example>:4:32)) ()) ())))
-               (Apply (((int (<example>:4:36 <example>:4:39)) ()) ())))
+              (((Apply (((int (Position (<example>:4:22 <example>:4:25))) ()) ()))
+                (Apply (((int (Position (<example>:4:29 <example>:4:32))) ()) ())))
+               (Apply (((int (Position (<example>:4:36 <example>:4:39))) ()) ())))
               ())))
           (constraints ())))
         (len (
           (quantifiers (4))
           (body (
             Fun (
-              (((Apply (((list (<example>:8:6 <example>:8:9)) ((Var (4 ())))) ())))
-               (Apply (((int (:0:-1 :0:-1)) ()) ())))
+              (((
+                 Apply (
+                   ((list (Position (<example>:8:6 <example>:8:9)))
+                    ((Var (4 ()))))
+                   ())))
+               (Apply (((int Built_in) ()) ())))
               ())))
           (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
         (list (
           (shape (
             Variant
@@ -632,13 +644,15 @@ let%expect_test "recursive functions" =
                  Tuple (
                    ((Var (1 ()))
                     (Apply (
-                      ((list (<example>:2:41 <example>:2:45)) ((Var (1 ())))) ())))
+                      ((list (Position (<example>:2:41 <example>:2:45)))
+                       ((Var (1 ()))))
+                      ())))
                    ()))))))
             (id 0)))
           (args (1))
-          (loc (<example>:2:2 <example>:2:45))))
-        (ref ((shape (Intrinsic Ref)) (args (0)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+          (loc (Position (<example>:2:2 <example>:2:45)))))
+        (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors (
         (Cons list)
         (Nil  list)))

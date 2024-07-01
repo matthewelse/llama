@@ -1,60 +1,36 @@
 open! Core
 open! Async
+module Terminal = Asai.Tty.Make (Llama_common.Reporter.Message)
 
-let type_check_with_error_reporting
-  ?(env = Llama_typing.Env.empty)
-  ast
-  ~get_code
-  ~dump_type_env
-  =
+let type_check_with_error_reporting ?env ?source ast ~dump_type_env =
+  let env = Option.value_or_thunk env ~default:Llama_typing.Env.empty in
   match Llama_typing.Infer.type_ast ast ~env with
   | Ok env ->
     if dump_type_env
     then (
       Core.print_s [%message (env : Llama_typing.Env.t)];
       Core.printf "%!");
-    Ok env
+    env
   | Error { message; primary_location } ->
-    let error_output =
-      Diagnostics.create
-        ~code:(get_code ())
-        ~message:"Type Error"
-        ~error_code:[%string "EXXXX"]
-        ~error_offset:(fst primary_location)
-        ~labels:{ primary = { span = primary_location; message }; secondary = [] }
-        Error
-    in
-    Diagnostics.render error_output Format.err_formatter;
-    Error 2
+    Llama_common.Reporter.fatal
+      ~loc:(Asai.Range.of_lex_range ?source primary_location)
+      Type_error
+      message
 ;;
 
-let parse_with_error_reporting lexbuf ~get_code ~dump_ast =
+let parse_with_error_reporting ?source lexbuf ~dump_ast =
   match Llama_frontend.Parser.program Llama_frontend.Lexer.read lexbuf with
   | exception Llama_frontend.Parser.Error n ->
-    let code = get_code () in
-    let error_output =
-      Diagnostics.create
-        ~code
-        ~message:"Syntax error"
-        ~error_code:[%string "E%{n#Int}"]
-        ~error_offset:(Lexing.lexeme_start_p lexbuf)
-        ~labels:
-          { primary =
-              { span = Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf
-              ; message = Llama_frontend.Errors.message n |> String.rstrip
-              }
-          ; secondary = []
-          }
-        Error
-    in
-    Diagnostics.render error_output Format.err_formatter;
-    Error 1
+    Llama_common.Reporter.fatal
+      ~loc:(Asai.Range.of_lexbuf ?source lexbuf)
+      (Parse_error n)
+      (Llama_frontend.Errors.message n |> String.strip)
   | ast ->
     if dump_ast
     then (
       Llama_utils.Pretty_print.pp_ast Format.std_formatter ast;
       Format.pp_print_newline Format.std_formatter ());
-    Ok ast
+    ast
 ;;
 
 let compile =
@@ -67,22 +43,19 @@ let compile =
         flag "dump-types" no_arg ~doc:"Dump the type environment after type-checking."
       in
       fun () ->
-        let%bind () =
+        let () =
           In_channel.with_file (File_path.to_string source_file) ~f:(fun in_channel ->
             let lexbuf = Lexing.from_channel in_channel in
             Lexing.set_filename lexbuf (File_path.to_string source_file);
-            let get_code () =
-              In_channel.seek in_channel 0L;
-              In_channel.input_all in_channel
-            in
-            match
-              let%bind.Result ast =
-                parse_with_error_reporting lexbuf ~get_code ~dump_ast
-              in
-              type_check_with_error_reporting ast ~get_code ~dump_type_env
-            with
-            | Ok _ -> return ()
-            | Error n -> exit n)
+            Llama_common.Reporter.run
+              ~emit:Terminal.display
+              ~fatal:(fun d -> Terminal.display d)
+              (fun () ->
+                let ast = parse_with_error_reporting lexbuf ~dump_ast in
+                let (_ : Llama_typing.Env.t) =
+                  type_check_with_error_reporting ast ~dump_type_env
+                in
+                ()))
         in
         Deferred.Or_error.return ()]
 ;;
@@ -96,29 +69,36 @@ let repl =
         flag "dump-types" no_arg ~doc:"Dump the type environment after type-checking."
       in
       fun () ->
-        let env = ref Llama_typing.Env.empty in
-        while
-          let code = LNoise.linenoise "llama> " in
-          match code with
-          | Some ".exit" -> false
-          | Some code ->
-            LNoise.history_add code |> (ignore : _ result -> unit);
-            let lexbuf = Lexing.from_string code in
-            Lexing.set_filename lexbuf "<stdin>";
-            let get_code () = code in
-            (match
-               let%bind.Result ast =
-                 parse_with_error_reporting lexbuf ~get_code ~dump_ast
-               in
-               type_check_with_error_reporting ast ~get_code ~dump_type_env ~env:!env
-             with
-             | Ok env' -> env := env'
-             | Error _ -> ());
-            true
-          | None -> (* This usually means sigint *) false
-        do
-          ()
-        done;
+        let env = ref (Llama_typing.Env.empty ()) in
+        let%bind () =
+          Deferred.repeat_until_finished () (fun () ->
+            let code = LNoise.linenoise "llama> " in
+            match code with
+            | Some ".exit" -> return (`Finished ())
+            | Some code ->
+              LNoise.history_add code |> (ignore : _ result -> unit);
+              let source : Asai.Range.source = `String { title = None; content = code } in
+              let lexbuf = Lexing.from_string code in
+              Lexing.set_filename lexbuf "<stdin>";
+              return
+              @@ Llama_common.Reporter.run
+                   ~emit:Terminal.display
+                   ~fatal:(fun d ->
+                     Terminal.display d;
+                     `Repeat ())
+                   (fun () ->
+                     let env' =
+                       let ast = parse_with_error_reporting lexbuf ~source ~dump_ast in
+                       type_check_with_error_reporting
+                         ast
+                         ~source
+                         ~dump_type_env
+                         ~env:!env
+                     in
+                     env := env';
+                     `Repeat ())
+            | None -> (* This usually means sigint *) return (`Finished ()))
+        in
         Deferred.Or_error.return ()]
 ;;
 

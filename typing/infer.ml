@@ -79,7 +79,11 @@ let type_ast ?env (ast : Ast.t) =
       in
       Ok env
     | Type_class_implementation
-        { name = name, _; for_ = type_name, args; functions = _; constraints } ->
+        { name = name, _
+        ; for_ = (type_name, type_name_loc), args
+        ; functions = _
+        ; constraints
+        } ->
       let type_arg =
         List.all_equal args ~equal:[%equal: string * _] |> Option.map ~f:fst
       in
@@ -97,7 +101,9 @@ let type_ast ?env (ast : Ast.t) =
         ; type_class = name
         ; for_type =
             Apply
-              ((type_name, List.map args ~f:(fun _ : Type.t -> Var (type_var, ()))), ())
+              ( ( (type_name, `Position type_name_loc)
+                , List.map args ~f:(fun _ : Type.t -> Var (type_var, ())) )
+              , () )
         }
       in
       Ok (Env.with_type_class_impl env tc)
@@ -132,7 +138,7 @@ let type_ast ?env (ast : Ast.t) =
           Ok (shape, env)
       in
       let constructor : Type.Constructor.t =
-        { args = List.map ~f:snd type_params; shape; loc }
+        { args = List.map ~f:snd type_params; shape; loc = `Position loc }
       in
       let env = Env.with_type_declaration env type_name constructor in
       Ok env)

@@ -35,7 +35,7 @@ let%expect_test "experiment" =
     { body =
         Fun
           ( ( [ Type.var tv; Type.var tv ]
-            , Apply (((Type_name.of_string "bool", Span.dummy), []), ()) )
+            , Apply (((Type_name.of_string "bool", `Position Span.dummy), []), ()) )
           , () )
     ; quantifiers = [ tv ]
     ; constraints =

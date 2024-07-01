@@ -19,7 +19,13 @@ module A : sig
   type apply = unit [@@deriving sexp_of]
   type fun_ = unit [@@deriving sexp_of]
   type tuple = unit [@@deriving sexp_of]
-  type type_constructor = Span.t [@@deriving sexp_of]
+
+  type type_constructor =
+    [ `Built_in
+    | `Position of Span.t
+    ]
+  [@@deriving sexp_of]
+
   type var = unit [@@deriving sexp_of]
 end
 
@@ -81,17 +87,17 @@ module Constructor : sig
   type t =
     { shape : Shape.t
     ; args : Var.t list
-    ; loc : Span.t
+    ; loc : [ `Built_in | `Position of Span.t ]
     }
   [@@deriving sexp_of]
 end
 
 val occurs : t -> var:Var.t -> bool
 val free_type_vars : t -> Var.Set.t
-val intrinsic : ?loc:Span.t -> Intrinsic.Type.t -> t
+val intrinsic : ?loc:[ `Built_in | `Position of Span.t ] -> Intrinsic.Type.t -> t
 
 (** [const name] is a type with no type parameters. *)
-val const : Type_name.t * Span.t -> t
+val const : Type_name.t * [ `Built_in | `Position of Span.t ] -> t
 
 val generalize : t -> env:Poly.t Ident.Map.t -> Poly.t
 val subst : t -> replacements:t Var.Map.t -> t

@@ -9,10 +9,5 @@ type t =
 
 val of_string : loc:Span.t -> string -> t
 val error_string : loc:Span.t -> string -> (_, t) result
-
-val error_s
-  :  loc:Source_code_position.t * Source_code_position.t
-  -> Sexp.t
-  -> (_, t) result
-
+val error_s : loc:Span.t -> Sexp.t -> (_, t) result
 val ok_exn : ('a, t) result -> 'a

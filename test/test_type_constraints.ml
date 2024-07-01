@@ -38,7 +38,7 @@ let%expect_test "option pattern" =
              ; id = Type.Id.create ()
              }
        ; args = [ arg ]
-       ; loc = Span.dummy
+       ; loc = `Position Span.dummy
        })
   in
   let v = Type.Var.create () in
@@ -56,7 +56,7 @@ let%expect_test "option pattern" =
     (constraints ((
       Same_type
       (Var (2 ()))
-      (Apply (((option (:0:-1 :0:-1)) ((Var (3 ())))) ()))
+      (Apply (((option (Position (:0:-1 :0:-1))) ((Var (3 ())))) ()))
       (::
         (Pattern_should_have_type
           (Construct (
@@ -89,7 +89,7 @@ let%expect_test "option match" =
                 ; id = Type.Id.create ()
                 }
           ; args = [ arg ]
-          ; loc = Span.dummy
+          ; loc = `Position Span.dummy
           }))
       x
       (Type.Poly.mono (Var (Type.Var.create (), ())))
@@ -109,8 +109,8 @@ let%expect_test "option match" =
     (env (
       (values ((x ((quantifiers ()) (body (Var (0 ()))) (constraints ())))))
       (type_declarations (
-        (bool ((shape (Intrinsic Bool)) (args ()) (loc (:0:-1 :0:-1))))
-        (int ((shape (Intrinsic Int)) (args ()) (loc (:0:-1 :0:-1))))
+        (bool ((shape (Intrinsic Bool)) (args ()) (loc Built_in)))
+        (int ((shape (Intrinsic Int)) (args ()) (loc Built_in)))
         (option (
           (shape (
             Variant
@@ -118,9 +118,9 @@ let%expect_test "option match" =
               ((None (:0:-1 :0:-1)) ()) ((Some (:0:-1 :0:-1)) ((Var (1 ()))))))
             (id 0)))
           (args (1))
-          (loc (:0:-1 :0:-1))))
-        (ref ((shape (Intrinsic Ref)) (args (2)) (loc (:0:-1 :0:-1))))
-        (string ((shape (Intrinsic String)) (args ()) (loc (:0:-1 :0:-1))))))
+          (loc (Position (:0:-1 :0:-1)))))
+        (ref ((shape (Intrinsic Ref)) (args (2)) (loc Built_in)))
+        (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors ((Some option)))
       (fields                     ())
       (type_classes               ())
@@ -128,7 +128,7 @@ let%expect_test "option match" =
     (constraints ((
       Same_type
       (Var (0 ()))
-      (Apply (((option (:0:-1 :0:-1)) ((Var (3 ())))) ()))
+      (Apply (((option (Position (:0:-1 :0:-1))) ((Var (3 ())))) ()))
       (::
         (Pattern_should_have_type
           (Construct (

@@ -7,6 +7,13 @@ module Annotation = struct
     | Pattern_should_have_type of Pattern.t * Type.t
     | Var_requires_type_class of Ident.t Located.t * Type_class_name.t
   [@@deriving sexp_of]
+
+  let loc t =
+    match t with
+    | Expression_should_have_type (e, _) -> Expression.loc e
+    | Pattern_should_have_type (p, _) -> Pattern.loc p
+    | Var_requires_type_class ({ loc; _ }, _) -> loc
+  ;;
 end
 
 module Constraint = struct
@@ -19,6 +26,8 @@ end
 module Annotations = struct
   (* FIXME melse: factor out [Nonempty_list.t] *)
   type t = ( :: ) of Annotation.t * Annotation.t list [@@deriving sexp_of]
+
+  let primary_loc (hd :: _) = Annotation.loc hd
 end
 
 type t = Annotations.t Constraint.t list [@@deriving sexp_of]
@@ -227,7 +236,7 @@ and infer_record fields ~env ~loc =
       Type_error.error_string ~loc error_message
     | Ok result -> Result.all result
   in
-  Ok (Type.Apply (((type_name, loc), type_args), ()), merge_list result)
+  Ok (Type.Apply (((type_name, `Position loc), type_args), ()), merge_list result)
 
 and infer_constructor (constructor_name, constructor_name_loc) arg ~env =
   let open Result.Let_syntax in
@@ -352,7 +361,7 @@ and check_pattern (pattern : Ast.Pattern.t) expected_ty ~env : (t * Env.t, _) re
          ( singleton
              (Same_type
                 ( expected_ty
-                , Apply (((type_name, constructor_loc), type_args), ())
+                , Apply (((type_name, `Position constructor_loc), type_args), ())
                 , [ Pattern_should_have_type (pattern, expected_ty) ] ))
          , env )
      | Some arg_type, Some arg_pattern ->
@@ -363,7 +372,7 @@ and check_pattern (pattern : Ast.Pattern.t) expected_ty ~env : (t * Env.t, _) re
              constraints
              (Same_type
                 ( expected_ty
-                , Apply (((type_name, constructor_loc), type_args), ())
+                , Apply (((type_name, `Position constructor_loc), type_args), ())
                 , [ Pattern_should_have_type (pattern, expected_ty) ] ))
          , env )
      | Some _, None ->

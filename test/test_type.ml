@@ -18,7 +18,9 @@ let%test_module "free_type_vars" =
     ;;
 
     let%expect_test "apply" =
-      ftvs (Apply (((Type_name.of_string "x", Span.dummy), [ Var (var (), ()) ]), ()));
+      ftvs
+        (Apply
+           (((Type_name.of_string "x", `Position Span.dummy), [ Var (var (), ()) ]), ()));
       [%expect {| (ftvs (0)) |}]
     ;;
 
@@ -69,7 +71,9 @@ let%expect_test "example" =
   let x = Type.Var.create () in
   let y = Type.Var.create () in
   let z = Type.Var.create () in
-  let apply s l : Type.t = Apply (((Type_name.of_string s, Span.dummy), l), ()) in
+  let apply s l : Type.t =
+    Apply (((Type_name.of_string s, `Position Span.dummy), l), ())
+  in
   let a = apply "a" [] in
   let j x y z = apply "j" [ x; y; z ] in
   let f x y = apply "f" [ x; y ] in

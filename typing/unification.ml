@@ -61,10 +61,11 @@ struct
 
   let rec unify_ty_ty t ty1 ty2 ~env ~annotations =
     let open Result.Let_syntax in
-    let loc = Span.dummy in
     if debug then print_s [%message "unify_ty_ty" (ty1 : Type.t) (ty2 : Type.t)];
     let%bind ty1 = normalize_ty t ty1 ~env in
     let%bind ty2 = normalize_ty t ty2 ~env in
+    (* FIXME: which one is the one we care about? *)
+    let loc = Constraints.Annotations.primary_loc annotations in
     match ty1, ty2 with
     | Fun ((args_left, result_left), _), Fun ((args_right, result_right), _) ->
       let%bind () =
@@ -88,15 +89,14 @@ struct
           Type_error.of_string
             ~loc
             [%string "Tuple arguments had different number of members."])
-    | Apply (((name1, name1_loc), args1), _), Apply (((name2, _), args2), _) ->
+    | Apply (((name1, _), args1), _), Apply (((name2, _), args2), _) ->
       let%bind () =
         (* FIXME: follow type aliases *)
         if Type_name.equal name1 name2
         then Ok ()
         else
           Type_error.error_string
-            ~loc:(* FIXME: which one is the one we care about? *)
-                 name1_loc
+            ~loc
             [%string "Types %{name1#Type_name} and %{name2#Type_name} are not equal."]
       in
       iter2_result args1 args2 ~f:(fun ty1 ty2 -> unify_ty_ty t ty1 ty2 ~env ~annotations)

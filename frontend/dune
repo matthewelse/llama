@@ -16,7 +16,6 @@
 (rule
  (target errors.ml)
  (deps parser.mly parser.messages)
- (mode promote)
  (action
   (with-stdout-to
    %{target}

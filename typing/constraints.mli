@@ -7,6 +7,8 @@ module Annotation : sig
     | Pattern_should_have_type of Pattern.t * Type.t
     | Var_requires_type_class of Ident.t Located.t * Type_class_name.t
   [@@deriving sexp_of]
+
+  val loc : t -> Span.t
 end
 
 module Constraint : sig
@@ -18,6 +20,8 @@ end
 
 module Annotations : sig
   type t = ( :: ) of Annotation.t * Annotation.t list [@@deriving sexp_of]
+
+  val primary_loc : t -> Span.t
 end
 
 type t [@@deriving sexp_of]
