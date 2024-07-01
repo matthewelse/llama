@@ -538,7 +538,7 @@ let%expect_test "value restriction" =
   |};
   [%expect
     {|
-    ￫ error[E002]
+    ￫ error[E004]
     10 |   let z = ref_set (x, (Some None))
        ^ Types option and int are not equal.
     |}]
@@ -561,7 +561,7 @@ let%expect_test "don't allow a ref to be set to two different types" =
   |};
   [%expect
     {|
-    ￫ error[E002]
+    ￫ error[E004]
     9 |     let a = ref_set (y, Some 10) in
       ^ Types option and int are not equal.
     |}]
@@ -588,7 +588,7 @@ let%expect_test "don't allow different branches of a match statement to have dif
      v}*)
   [%expect
     {|
-    ￫ error[E002]
+    ￫ error[E004]
     8 |     | Cons (x, y) -> (Some x, y)
       ^ Types list and option are not equal.
     |}]

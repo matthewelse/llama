@@ -46,7 +46,7 @@ let rec infer (expr : Expression.t) ~env =
   | Const (Int _, _) -> Ok (no_constraints (Type.intrinsic Int))
   | Const (String _, _) -> Ok (no_constraints (Type.intrinsic String))
   | Var (v, loc) ->
-    let%bind poly_type = Env.value env v ~loc in
+    let poly_type = Env.value_exn env v ~loc in
     let type_, constraints = Type.Poly.init poly_type in
     let constraints =
       List.map constraints ~f:(fun { type_class; arg } ->
@@ -106,7 +106,7 @@ let rec infer (expr : Expression.t) ~env =
     Ok (ty, merge_list out)
   | Construct ((constructor_name, arg), _) -> infer_constructor constructor_name arg ~env
   | Record (fields, loc) -> infer_record fields ~env ~loc
-  | Match { scrutinee; cases; annotation = _ } ->
+  | Match { scrutinee; cases; annotation = loc } ->
     (* FIXME: check match completeness *)
     let%bind scrutinee_ty, scrutinee_constraints = infer scrutinee ~env in
     let%bind body_ty, body_constraints =
@@ -128,18 +128,24 @@ let rec infer (expr : Expression.t) ~env =
     in
     let body_ty =
       (* The body type should be defined, since [cases] should never be empty. *)
-      Option.value_exn ~message:"Internal compiler error" body_ty
+      match body_ty with
+      | None ->
+        Reporter.fatal
+          ~loc:(Asai.Range.of_lex_range loc)
+          Type_error
+          "Internal compiler error: body type undefined (empty match expression?)"
+      | Some body_ty -> body_ty
     in
     Ok (body_ty, merge scrutinee_constraints body_constraints)
 
 and infer_record fields ~env ~loc =
   let open Result.Let_syntax in
-  let%bind type_name =
+  let type_name =
     (* Arbitrarily choose the first field as the "representative" to pick a type for this record. *)
-    Env.field env (List.hd_exn fields |> fst |> fst) ~loc
+    Env.field_exn env (List.hd_exn fields |> fst |> fst) ~loc
   in
-  let%bind { args = type_args; shape; loc = _ } =
-    Env.type_declaration env type_name ~loc
+  let%tydi { args = type_args; shape; loc = _ } =
+    Env.type_declaration_exn env type_name ~loc
   in
   (* Make fresh type variables for the args *)
   let type_args =
@@ -240,9 +246,9 @@ and infer_record fields ~env ~loc =
 
 and infer_constructor (constructor_name, constructor_name_loc) arg ~env =
   let open Result.Let_syntax in
-  let%bind type_name = Env.constructor env constructor_name ~loc:constructor_name_loc in
-  let%bind { args = type_args; shape; loc = type_decl_loc } =
-    Env.type_declaration env type_name ~loc:constructor_name_loc
+  let type_name = Env.constructor_exn env constructor_name ~loc:constructor_name_loc in
+  let%tydi { args = type_args; shape; loc = type_decl_loc } =
+    Env.type_declaration_exn env type_name ~loc:constructor_name_loc
   in
   (* Make fresh type variables for the args *)
   let type_args =
@@ -330,9 +336,9 @@ and check_pattern (pattern : Ast.Pattern.t) expected_ty ~env : (t * Env.t, _) re
     Ok (empty, env)
   | Construct (((constructor_name, constructor_loc), arg), _) ->
     (* FIXME: share this code with [check_constructor] *)
-    let%bind type_name = Env.constructor env constructor_name ~loc:constructor_loc in
-    let%bind { args = type_args; shape; loc = _ } =
-      Env.type_declaration env type_name ~loc:constructor_loc
+    let type_name = Env.constructor_exn env constructor_name ~loc:constructor_loc in
+    let%tydi { args = type_args; shape; loc = _ } =
+      Env.type_declaration_exn env type_name ~loc:constructor_loc
     in
     (* Make fresh type variables for the args *)
     let type_args =

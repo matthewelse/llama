@@ -2,7 +2,7 @@ open! Core
 open! Async
 module Terminal = Asai.Tty.Make (Llama_common.Reporter.Message)
 
-let type_check_with_error_reporting ?env ?source ast ~dump_type_env =
+let type_check_with_error_reporting ?env ast ~dump_type_env =
   let env = Option.value_or_thunk env ~default:Llama_typing.Env.empty in
   match Llama_typing.Infer.type_ast ast ~env with
   | Ok env ->
@@ -13,16 +13,16 @@ let type_check_with_error_reporting ?env ?source ast ~dump_type_env =
     env
   | Error { message; primary_location } ->
     Llama_common.Reporter.fatal
-      ~loc:(Asai.Range.of_lex_range ?source primary_location)
+      ~loc:(Asai.Range.of_lex_range primary_location)
       Type_error
       message
 ;;
 
-let parse_with_error_reporting ?source lexbuf ~dump_ast =
+let parse_with_error_reporting lexbuf ~dump_ast =
   match Llama_frontend.Parser.program Llama_frontend.Lexer.read lexbuf with
   | exception Llama_frontend.Parser.Error n ->
     Llama_common.Reporter.fatal
-      ~loc:(Asai.Range.of_lexbuf ?source lexbuf)
+      ~loc:(Asai.Range.of_lexbuf lexbuf)
       (Parse_error n)
       (Llama_frontend.Errors.message n |> String.strip)
   | ast ->
@@ -82,18 +82,14 @@ let repl =
               Lexing.set_filename lexbuf "<stdin>";
               return
               @@ Llama_common.Reporter.run
-                   ~emit:Terminal.display
+                   ~emit:(Terminal.display ~override_source:source)
                    ~fatal:(fun d ->
-                     Terminal.display d;
+                     Terminal.display d ~override_source:source;
                      `Repeat ())
                    (fun () ->
                      let env' =
-                       let ast = parse_with_error_reporting lexbuf ~source ~dump_ast in
-                       type_check_with_error_reporting
-                         ast
-                         ~source
-                         ~dump_type_env
-                         ~env:!env
+                       let ast = parse_with_error_reporting lexbuf ~dump_ast in
+                       type_check_with_error_reporting ast ~dump_type_env ~env:!env
                      in
                      env := env';
                      `Repeat ())

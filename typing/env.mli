@@ -15,22 +15,11 @@ val empty : unit -> t
 
 (** Accessors *)
 
-val constructor : t -> Constructor.t -> loc:Span.t -> (Type_name.t, Type_error.t) result
-val field : t -> Field_name.t -> loc:Span.t -> (Type_name.t, Type_error.t) result
-
-val type_declaration
-  :  t
-  -> Type_name.t
-  -> loc:Span.t
-  -> (Type.Constructor.t, Type_error.t) result
-
-val value : t -> Ident.t -> loc:Span.t -> (Type.Poly.t, Type_error.t) result
-
-val type_class
-  :  t
-  -> Type_class_name.t
-  -> loc:Span.t
-  -> (Type_class.t, Type_error.t) result
+val constructor_exn : t -> Constructor.t -> loc:Span.t -> Type_name.t
+val field_exn : t -> Field_name.t -> loc:Span.t -> Type_name.t
+val type_declaration_exn : t -> Type_name.t -> loc:Span.t -> Type.Constructor.t
+val value_exn : t -> Ident.t -> loc:Span.t -> Type.Poly.t
+val type_class_exn : t -> Type_class_name.t -> loc:Span.t -> Type_class.t
 
 (** Modifers *)
 
@@ -38,16 +27,11 @@ val with_constructors
   :  t
   -> ((Constructor.t * Span.t) * _) list
   -> type_name:Type_name.t
-  -> (t, Type_error.t) result
+  -> t
 
-val with_fields
-  :  t
-  -> ((Field_name.t * Span.t) * _) list
-  -> type_name:Type_name.t
-  -> (t, Type_error.t) result
-
+val with_fields : t -> ((Field_name.t * Span.t) * _) list -> type_name:Type_name.t -> t
 val with_type_class : t -> Type_class_name.t -> Type_class.t -> t
-val with_type_declaration : t -> Type_name.t -> Type.Constructor.t -> t
+val with_type_declaration : t -> Type_name.t -> Type.Constructor.t -> loc:Span.t -> t
 val with_var : t -> Ident.t -> Type.Poly.t -> t
 val with_vars : t -> (Ident.t * Type.Var.t) list -> t
 val remove_var : t -> Ident.t -> t

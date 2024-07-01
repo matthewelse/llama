@@ -30,70 +30,100 @@ let empty () =
   }
 ;;
 
-let field t name ~loc =
-  Map.find t.fields name
-  |> Result.of_option
-       ~error:(Type_error.of_string ~loc [%string "Unbound field [%{name#Field_name}]"])
+let field_exn t name ~loc =
+  match Map.find t.fields name with
+  | None ->
+    Reporter.fatal
+      Unbound_field
+      [%string "Unbound field [%{name#Field_name}]"]
+      ~loc:(Asai.Range.of_lex_range loc)
+  | Some x -> x
 ;;
 
-let constructor t name ~loc =
-  Map.find t.constructors name
-  |> Result.of_option
-       ~error:
-         (Type_error.of_string ~loc [%string "Unbound constructor %{name#Constructor}"])
+let constructor_exn t name ~loc =
+  match Map.find t.constructors name with
+  | None ->
+    Reporter.fatal
+      Unbound_constructor
+      [%string "Unbound constructor [%{name#Constructor}]"]
+      ~loc:(Asai.Range.of_lex_range loc)
+  | Some x -> x
 ;;
 
-let type_declaration t name ~loc =
-  Map.find t.type_declarations name
-  |> Result.of_option
-       ~error:(Type_error.of_string ~loc [%string "Unbound type %{name#Type_name}"])
+let type_declaration_exn t name ~loc =
+  match Map.find t.type_declarations name with
+  | None ->
+    Reporter.fatal
+      Unbound_type_constructor
+      [%string "Unbound type declaration [%{name#Type_name}]"]
+      ~loc:(Asai.Range.of_lex_range loc)
+  | Some x -> x
 ;;
 
-let value t name ~loc =
-  Map.find t.values name
-  |> Result.of_option
-       ~error:(Type_error.of_string ~loc [%string "Unbound variable [%{name#Ident}]"])
+let value_exn t name ~loc =
+  match Map.find t.values name with
+  | None ->
+    Reporter.fatal
+      Unbound_variable
+      [%string "Unbound variable [%{name#Ident}]"]
+      ~loc:(Asai.Range.of_lex_range loc)
+  | Some x -> x
 ;;
 
-let type_class t name ~loc =
-  Map.find t.type_classes name
-  |> Result.of_option
-       ~error:
-         (Type_error.of_string
-            ~loc
-            [%string "Unknown type class [%{name#Type_class_name}]"])
+let type_class_exn t name ~loc =
+  match Map.find t.type_classes name with
+  | None ->
+    Reporter.fatal
+      Unbound_type_class
+      [%string "Unbound type class [%{name#Type_class_name}]"]
+      ~loc:(Asai.Range.of_lex_range loc)
+  | Some x -> x
 ;;
 
 let with_fields t fields ~type_name =
-  let%bind.Result fields =
-    List.fold_result fields ~init:t.fields ~f:(fun fields ((name, loc), _) ->
+  let fields =
+    List.fold fields ~init:t.fields ~f:(fun fields ((name, loc), _) ->
       match Map.add fields ~key:name ~data:type_name with
-      | `Ok fields -> Ok fields
+      | `Ok fields -> fields
       | `Duplicate ->
-        Error (Type_error.of_string ~loc [%string "Duplicate field [%{name#Field_name}]"]))
+        Reporter.emit
+          ~loc:(Asai.Range.of_lex_range loc)
+          Duplicate_field
+          [%string "Duplicate field [%{name#Field_name}] in scope."];
+        fields)
   in
-  Ok { t with fields }
+  { t with fields }
 ;;
 
 let with_constructors t constructors ~type_name =
-  let%bind.Result constructors =
-    List.fold_result
-      constructors
-      ~init:t.constructors
-      ~f:(fun constructors ((name, loc), _) ->
-        match Map.add constructors ~key:name ~data:type_name with
-        | `Ok fields -> Ok fields
-        | `Duplicate ->
-          Error
-            (Type_error.of_string
-               ~loc
-               [%string "Duplicate constructor [%{name#Constructor}]"]))
+  let constructors =
+    List.fold constructors ~init:t.constructors ~f:(fun constructors ((name, loc), _) ->
+      match Map.add constructors ~key:name ~data:type_name with
+      | `Ok constructors -> constructors
+      | `Duplicate ->
+        Reporter.emit
+          ~severity:Warning
+          ~loc:(Asai.Range.of_lex_range loc)
+          Duplicate_constructor
+          [%string "Duplicate constructor [%{name#Constructor}] in scope."];
+        constructors)
   in
-  Ok { t with constructors }
+  { t with constructors }
 ;;
 
-let with_type_declaration t name ty =
-  { t with type_declarations = Map.add_exn t.type_declarations ~key:name ~data:ty }
+let with_type_declaration t name ty ~loc =
+  let type_declarations =
+    match Map.add t.type_declarations ~key:name ~data:ty with
+    | `Ok type_declarations -> type_declarations
+    | `Duplicate ->
+      Reporter.emit
+        ~severity:Warning
+        ~loc:(Asai.Range.of_lex_range loc)
+        Duplicate_type_declaration
+        [%string "Duplicate type declaration [%{name#Type_name}] in scope."];
+      t.type_declarations
+  in
+  { t with type_declarations }
 ;;
 
 let with_vars t vars =

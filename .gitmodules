@@ -1,0 +1,3 @@
+[submodule "vendor/asai"]
+	path = vendor/asai
+	url = ./vendor/asai

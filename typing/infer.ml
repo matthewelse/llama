@@ -124,7 +124,7 @@ let type_ast ?env (ast : Ast.t) =
           let shape : Type.Constructor.Shape.t =
             Record { fields = record_fields; id = Type.Id.create () }
           in
-          let%bind.Result env = Env.with_fields env record_fields ~type_name in
+          let env = Env.with_fields env record_fields ~type_name in
           Ok (shape, env)
         | Variant { constructors = variant_constructors } ->
           let variant_constructors =
@@ -134,12 +134,12 @@ let type_ast ?env (ast : Ast.t) =
           let shape : Type.Constructor.Shape.t =
             Variant { constructors = variant_constructors; id = Type.Id.create () }
           in
-          let%bind env = Env.with_constructors env variant_constructors ~type_name in
+          let env = Env.with_constructors env variant_constructors ~type_name in
           Ok (shape, env)
       in
       let constructor : Type.Constructor.t =
         { args = List.map ~f:snd type_params; shape; loc = `Position loc }
       in
-      let env = Env.with_type_declaration env type_name constructor in
+      let env = Env.with_type_declaration env type_name constructor ~loc in
       Ok env)
 ;;

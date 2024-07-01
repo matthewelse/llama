@@ -25,8 +25,7 @@ let%expect_test "option pattern" =
       (Env.with_constructors
          (Env.empty ())
          [ (Constructor.of_string "Some", Span.dummy), () ]
-         ~type_name:(Type_name.of_string "option")
-       |> Type_error.ok_exn)
+         ~type_name:(Type_name.of_string "option"))
       (Type_name.of_string "option")
       (let arg = Type.Var.create () in
        { shape =
@@ -40,6 +39,7 @@ let%expect_test "option pattern" =
        ; args = [ arg ]
        ; loc = `Position Span.dummy
        })
+      ~loc:Span.dummy
   in
   let v = Type.Var.create () in
   print_s [%message "variable we care about:" (v : Type.Var.t)];
@@ -76,8 +76,7 @@ let%expect_test "option match" =
          (Env.with_constructors
             (Env.empty ())
             [ (Constructor.of_string "Some", Span.dummy), () ]
-            ~type_name:(Type_name.of_string "option")
-          |> Type_error.ok_exn)
+            ~type_name:(Type_name.of_string "option"))
          (Type_name.of_string "option")
          (let arg = Type.Var.create () in
           { shape =
@@ -90,7 +89,8 @@ let%expect_test "option match" =
                 }
           ; args = [ arg ]
           ; loc = `Position Span.dummy
-          }))
+          })
+         ~loc:Span.dummy)
       x
       (Type.Poly.mono (Var (Type.Var.create (), ())))
   in
