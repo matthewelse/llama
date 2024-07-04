@@ -35,12 +35,37 @@ module Ast =
       end
     end)
 
+let pp_const formatter (const : Ast.Const.t) =
+  match const with
+  | Int i -> Format.pp_print_string formatter i
+  | String s -> Format.pp_print_string formatter s
+;;
+
 module Pattern = struct
   include Ast.Pattern
 
   let loc t =
     match t with
     | Var (_, loc) | Construct (_, loc) | Tuple (_, loc) -> loc
+  ;;
+
+  let rec pp formatter t =
+    match t with
+    | Var (ident, _) -> Ident.pp formatter ident
+    | Construct (((constructor, _), None), _) ->
+      Format.pp_print_string formatter (Constructor.to_string constructor)
+    | Construct (((constructor, _), Some pattern), _) ->
+      Format.pp_print_string formatter (Constructor.to_string constructor);
+      Format.pp_print_char formatter ' ';
+      pp formatter pattern
+    | Tuple (patterns, _) ->
+      Format.pp_print_char formatter '(';
+      Format.pp_print_list
+        ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+        pp
+        formatter
+        patterns;
+      Format.pp_print_char formatter ')'
   ;;
 end
 
@@ -58,6 +83,79 @@ module Expression = struct
     | Construct (_, loc)
     | Record (_, loc)
     | Match { annotation = loc; _ } -> loc
+  ;;
+
+  let rec pp formatter t =
+    match t with
+    | Var (ident, _) -> Ident.pp formatter ident
+    | Apply ((f, arg), _) ->
+      pp formatter f;
+      Format.pp_print_char formatter '(';
+      Format.pp_print_list
+        ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+        pp
+        formatter
+        arg;
+      Format.pp_print_char formatter ')'
+    | Lambda ((args, body), _) ->
+      Format.pp_print_string formatter "fun ";
+      Format.pp_print_char formatter '(';
+      Format.pp_print_list
+        ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+        Ident.pp
+        formatter
+        args;
+      Format.pp_print_char formatter ')';
+      Format.pp_print_string formatter " -> ";
+      pp formatter body
+    | Let { name; value; in_; annotation = _ } ->
+      Format.pp_print_string formatter "let ";
+      Ident.pp formatter name;
+      Format.pp_print_string formatter " = ";
+      pp formatter value;
+      Format.pp_print_string formatter " in ";
+      pp formatter in_
+    | Const (c, _) -> pp_const formatter c
+    | Tuple (es, _) ->
+      Format.pp_print_char formatter '(';
+      Format.pp_print_list
+        ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
+        pp
+        formatter
+        es;
+      Format.pp_print_char formatter ')'
+    | Construct (((constructor, _), arg), _) ->
+      Format.pp_print_string formatter (Constructor.to_string constructor);
+      (match arg with
+       | None -> ()
+       | Some arg ->
+         Format.pp_print_string formatter " ";
+         pp formatter arg)
+    | Record (fields, _) ->
+      Format.pp_print_char formatter '{';
+      Format.pp_print_list
+        ~pp_sep:(fun formatter () -> Format.pp_print_string formatter "; ")
+        (fun formatter ((ident, _), expr) ->
+          Format.pp_print_string formatter (Field_name.to_string ident);
+          Format.pp_print_string formatter " = ";
+          pp formatter expr)
+        formatter
+        fields;
+      Format.pp_print_char formatter '}'
+    | Match { scrutinee; cases; annotation = _ } ->
+      Format.pp_print_string formatter "match ";
+      pp formatter scrutinee;
+      Format.pp_print_string formatter " with\n";
+      Format.pp_print_list
+        ~pp_sep:(fun formatter () -> Format.pp_print_cut formatter ())
+        (fun formatter (pattern, expr) ->
+          Format.pp_print_string formatter "| ";
+          Pattern.pp formatter pattern;
+          Format.pp_print_string formatter " -> ";
+          pp formatter expr)
+        formatter
+        cases;
+      Format.pp_close_box formatter ()
   ;;
 end
 

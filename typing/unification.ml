@@ -94,10 +94,43 @@ struct
         (* FIXME: follow type aliases *)
         if Type_name.equal name1 name2
         then Ok ()
-        else
-          Type_error.error_string
-            ~loc
-            [%string "Types %{name1#Type_name} and %{name2#Type_name} are not equal."]
+        else (
+          let extra_remarks =
+            let (a :: annotations) = annotations in
+            List.map (a :: annotations) ~f:(fun annotation ->
+              match annotation with
+              | Expression_should_have_type (expr, ty) ->
+                Asai.Diagnostic.loctextf
+                  ~loc:(Asai.Range.of_lex_range (Expression.loc expr))
+                  "%a is expected to have type %a."
+                  Expression.pp
+                  expr
+                  Type.pp
+                  (normalize_ty t ty ~env |> Or_error.ok_exn)
+              | Pattern_should_have_type (pat, ty) ->
+                Asai.Diagnostic.loctextf
+                  ~loc:(Asai.Range.of_lex_range (Pattern.loc pat))
+                  "Pattern %a is expected to have type %a."
+                  Pattern.pp
+                  pat
+                  Type.pp
+                  (normalize_ty t ty ~env |> Or_error.ok_exn)
+              | Var_requires_type_class (ident, tc) ->
+                Asai.Diagnostic.loctextf
+                  ~loc:(Asai.Range.of_lex_range ident.loc)
+                  "Variable %s should implement type class %s."
+                  (Ident.to_string ident.value)
+                  (Type_class_name.to_string tc))
+          in
+          Reporter.fatalf
+            ~extra_remarks
+            ~loc:(Asai.Range.of_lex_range loc)
+            Type_error
+            "Types %a and %a are not equal."
+            Type.pp
+            ty1
+            Type.pp
+            ty2)
       in
       iter2_result args1 args2 ~f:(fun ty1 ty2 -> unify_ty_ty t ty1 ty2 ~env ~annotations)
       |> Result.map_error ~f:(function
@@ -119,8 +152,13 @@ struct
         Lookup.unify_var_ty t v ty;
         Ok ())
     | t1, t2 ->
-      Type_error.error_s
-        ~loc
-        [%message "Failed to unify types" (t1 : Type.t) (t2 : Type.t)]
+      Reporter.fatalf
+        ~loc:(Asai.Range.of_lex_range loc)
+        Type_error
+        "Incompatible types: %a and %a"
+        Type.pp
+        t1
+        Type.pp
+        t2
   ;;
 end

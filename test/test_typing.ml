@@ -539,8 +539,10 @@ let%expect_test "value restriction" =
   [%expect
     {|
     ￫ error[E004]
+    ￭ <example>
     10 |   let z = ref_set (x, (Some None))
-       ^ Types option and int are not equal.
+       ^ Types 'a option and int are not equal.
+       ^ None is expected to have type int.
     |}]
 ;;
 
@@ -562,8 +564,11 @@ let%expect_test "don't allow a ref to be set to two different types" =
   [%expect
     {|
     ￫ error[E004]
+    ￭ <example>
     9 |     let a = ref_set (y, Some 10) in
-      ^ Types option and int are not equal.
+      ^ ref_set is expected to have type int ref -> int -> unit.
+      ^ Types 'a option and int are not equal.
+      ^ Some 10 is expected to have type int.
     |}]
 ;;
 
@@ -589,8 +594,10 @@ let%expect_test "don't allow different branches of a match statement to have dif
   [%expect
     {|
     ￫ error[E004]
+    ￭ <example>
     8 |     | Cons (x, y) -> (Some x, y)
-      ^ Types list and option are not equal.
+      ^ Types 'a list and 'a option are not equal.
+      ^ (Some x, y) is expected to have type ('b option * 'a option).
     |}]
 ;;
 

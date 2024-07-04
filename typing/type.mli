@@ -101,3 +101,5 @@ val const : Type_name.t * [ `Built_in | `Position of Span.t ] -> t
 
 val generalize : t -> env:Poly.t Ident.Map.t -> Poly.t
 val subst : t -> replacements:t Var.Map.t -> t
+val pp : Formatter.t -> t -> unit
+val pp_poly : Formatter.t -> Poly.t -> unit

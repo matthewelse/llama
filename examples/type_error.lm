@@ -1,0 +1,5 @@
+intrinsic int_add : int -> int -> int = "%int_add"
+type 'a option = | None | Some of 'a
+
+let y = fun (x, y) ->
+    int_add (Some x, Some y)

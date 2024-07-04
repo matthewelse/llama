@@ -1,0 +1,11 @@
+intrinsic int_add : int -> int -> int = "%int_add"
+type 'a option = | None | Some of 'a
+
+let f = fun (x, y) ->
+    match x with
+    | None -> None
+    | Some x -> match y with | None -> None
+                             | Some y -> Some (int_add (x, y))
+;;
+
+let z = f (1, 10);;

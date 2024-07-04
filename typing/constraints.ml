@@ -76,21 +76,23 @@ let rec infer (expr : Expression.t) ~env =
        inferred type of each value in [arg_values]. This pushes type errors "down" into each
        argument, rather than checking the function as a whole, giving better error messages (at
        the cost of more constraints to iterate through). *)
+    let fresh_arg_tys = List.map arg_values ~f:(fun _ -> Type.var (Type.Var.create ())) in
+    let return_ty = Type.var (Type.Var.create ()) in
+    let fun_ty : Type.t = Fun ((fresh_arg_tys, return_ty), ()) in
+    let%bind fun_constraints = check function_ fun_ty ~env in
     let%bind arg_tys =
-      List.map arg_values ~f:(fun arg_value ->
+      List.map2_exn arg_values fresh_arg_tys ~f:(fun arg_value fresh_ty ->
         let%bind.Result arg_ty, arg_constraints = infer arg_value ~env in
-        let fresh_ty = Type.var (Type.Var.create ()) in
         let fresh_type_equals_arg_ty : Annotations.t Constraint.t =
           Same_type
-            (arg_ty, fresh_ty, [ Expression_should_have_type (arg_value, fresh_ty) ])
+            ( arg_ty
+            , fresh_ty
+            , [ Expression_should_have_type (arg_value, fresh_ty)
+              ; Expression_should_have_type (function_, fun_ty)
+              ] )
         in
         Ok ((arg_ty, fresh_type_equals_arg_ty :: arg_constraints), fresh_ty))
       |> Result.all
-    in
-    let return_ty = Type.var (Type.Var.create ()) in
-    let%bind fun_constraints =
-      let fun_ty : Type.t = Fun ((List.map arg_tys ~f:snd, return_ty), ()) in
-      check function_ fun_ty ~env
     in
     Ok
       ( return_ty
