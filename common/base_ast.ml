@@ -117,23 +117,11 @@ module Make (Type_var : Type_var.S) (A : Annotation.S) = struct
           ; cases : (Pattern.t * t) list
           ; annotation : A.Expression.match_
           }
+      | TFun of (Type_var.t list * t, A.Expression.tfun) Annotated.t
+      | TApply of (t * Type.t, A.Expression.tapply) Annotated.t
     [@@deriving sexp_of]
 
     let const_int n ~annot = Const (Int (Int.to_string n), annot)
     let const_string s ~annot = Const (String s, annot)
-
-    let rec is_syntactic_value t =
-      (* see: http://mlton.org/ValueRestriction *)
-      match t with
-      | Var _ -> true
-      | Const _ -> true
-      | Lambda _ -> true
-      | Tuple (ts, _) -> List.for_all ts ~f:is_syntactic_value
-      | Record (fields, _) -> List.for_all fields ~f:(fun (_, t) -> is_syntactic_value t)
-      | Construct _ -> true
-      | Match _ -> false
-      | Let _ -> false
-      | Apply _ -> false
-    ;;
   end
 end

@@ -139,6 +139,7 @@ let rec infer (expr : Expression.t) ~env =
       | Some body_ty -> body_ty
     in
     Ok (body_ty, merge scrutinee_constraints body_constraints)
+  | TFun _ | TApply _ -> .
 
 and infer_record fields ~env ~loc =
   let open Result.Let_syntax in

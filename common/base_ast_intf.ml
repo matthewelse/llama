@@ -26,6 +26,8 @@ module Annotation = struct
       type match_ [@@deriving sexp_of]
       type record [@@deriving sexp_of]
       type record_field [@@deriving sexp_of]
+      type tapply [@@deriving sexp_of]
+      type tfun [@@deriving sexp_of]
       type tuple [@@deriving sexp_of]
       type var [@@deriving sexp_of]
     end
@@ -146,11 +148,12 @@ module type Base_ast = sig
             ; cases : (Pattern.t * t) list
             ; annotation : A.Expression.match_
             }
+        | TFun of (Type_var.t list * t, A.Expression.tfun) Annotated.t
+        | TApply of (t * Type.t, A.Expression.tapply) Annotated.t
       [@@deriving sexp_of]
 
       val const_int : int -> annot:A.Expression.const -> t
       val const_string : string -> annot:A.Expression.const -> t
-      val is_syntactic_value : t -> bool
     end
   end
 end
