@@ -11,7 +11,9 @@ module Ast =
         type construct = Span.t [@@deriving sexp_of]
         type constructor = Span.t [@@deriving sexp_of]
         type lambda = Span.t [@@deriving sexp_of]
+        type lambda_arg = Span.t [@@deriving sexp_of]
         type let_ = Span.t [@@deriving sexp_of]
+        type let_name = Span.t [@@deriving sexp_of]
         type match_ = Span.t [@@deriving sexp_of]
         type record = Span.t [@@deriving sexp_of]
         type record_field = Span.t [@@deriving sexp_of]
@@ -119,7 +121,7 @@ module Expression = struct
       Format.pp_print_char formatter '(';
       Format.pp_print_list
         ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
-        Ident.pp
+        (fun formatter (ident, _) -> Ident.pp formatter ident)
         formatter
         args;
       Format.pp_print_char formatter ')';
@@ -127,7 +129,7 @@ module Expression = struct
       pp formatter body
     | Let { name; value; in_; annotation = _ } ->
       Format.pp_print_string formatter "let ";
-      Ident.pp formatter name;
+      Ident.pp formatter (fst name);
       Format.pp_print_string formatter " = ";
       pp formatter value;
       Format.pp_print_string formatter " in ";

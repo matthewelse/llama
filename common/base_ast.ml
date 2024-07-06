@@ -95,9 +95,12 @@ module Make (Type_var : Type_var.S) (A : Annotation.S) = struct
     type t =
       | Var of (Ident.t, A.Expression.var) Annotated.t
       | Apply of (t * t list, A.Expression.apply) Annotated.t
-      | Lambda of (Ident.t list * t, A.Expression.lambda) Annotated.t
+      | Lambda of
+          ( (Ident.t, A.Expression.lambda_arg) Annotated.t list * t
+            , A.Expression.lambda )
+            Annotated.t
       | Let of
-          { name : Ident.t
+          { name : (Ident.t, A.Expression.let_name) Annotated.t
           ; value : t
           ; in_ : t
           ; annotation : A.Expression.let_

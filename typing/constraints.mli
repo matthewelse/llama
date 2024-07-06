@@ -26,11 +26,24 @@ end
 
 type t [@@deriving sexp_of]
 
+module Gen_out : sig
+  type constraints := t
+
+  type 'ast t =
+    { constraints : constraints
+    ; typed_ast : 'ast
+    }
+end
+
 val empty : t
 val merge : t -> t -> t
 val to_list : t -> Annotations.t Constraint.t list
-val infer : Expression.t -> env:Env.t -> (Type.t * t, Type_error.t) result
+val infer : Expression.t -> env:Env.t -> Typed_ast.Expression.t Gen_out.t * Type.t
 
 module For_testing : sig
-  val check_pattern : Pattern.t -> Type.t -> env:Env.t -> (t * Env.t, Type_error.t) result
+  val check_pattern
+    :  Pattern.t
+    -> Type.t
+    -> env:Env.t
+    -> Typed_ast.Pattern.t Gen_out.t * Env.t
 end

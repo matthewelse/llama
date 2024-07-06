@@ -22,7 +22,9 @@ module Annotation = struct
       type construct [@@deriving sexp_of]
       type constructor [@@deriving sexp_of]
       type lambda [@@deriving sexp_of]
+      type lambda_arg [@@deriving sexp_of]
       type let_ [@@deriving sexp_of]
+      type let_name [@@deriving sexp_of]
       type match_ [@@deriving sexp_of]
       type record [@@deriving sexp_of]
       type record_field [@@deriving sexp_of]
@@ -126,9 +128,12 @@ module type Base_ast = sig
       type t =
         | Var of (Ident.t, A.Expression.var) Annotated.t
         | Apply of (t * t list, A.Expression.apply) Annotated.t
-        | Lambda of (Ident.t list * t, A.Expression.lambda) Annotated.t
+        | Lambda of
+            ( (Ident.t, A.Expression.lambda_arg) Annotated.t list * t
+              , A.Expression.lambda )
+              Annotated.t
         | Let of
-            { name : Ident.t
+            { name : (Ident.t, A.Expression.let_name) Annotated.t
             ; value : t
             ; in_ : t
             ; annotation : A.Expression.let_

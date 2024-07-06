@@ -153,7 +153,6 @@ let type_ :=
 
   | "("; ")" ; "->"; return_type = type_;                                              { (Fun (([]   , return_type), $sloc) : Ast.Type.t) }
   |      arg = base_type;  "->"; return_type = type_;                                  { (Fun (([arg], return_type), $sloc) : Ast.Type.t) }
-  | "("; arg = type_; ")"; "->"; return_type = type_;                                  { (Fun (([arg], return_type), $sloc) : Ast.Type.t) }
   | "(";  args = separated_nonempty_list(",", type_); ")"; "->"; return_type = type_;  { (Fun (( args, return_type), $sloc) : Ast.Type.t) }
 
   | "(";  args = separated_nonempty_list(",", type_); ")"; type_id = located(type_id); { (Apply ((type_id, args), $sloc) : Ast.Type.t) }
@@ -224,7 +223,7 @@ let one_expression :=
   | "while"; cond = expression; "do"; body = expression; { While { cond; body } }
   | "for"; ~ = ident; ":="; lo = expression; "to"; hi = expression; "do"; body = expression; { For { ident; lo; hi; body } }
   | "break"; { Break } *)
-  | "let"; name = ident; "="; value = expression; "in"; in_ = expression; { Let { name; value; in_; annotation = $sloc } }
+  | "let"; name = located(ident); "="; value = expression; "in"; in_ = expression; { Let { name; value; in_; annotation = $sloc } }
   | constructor = constructor_name; ~ = expression; { Construct (((constructor, $loc(constructor)), Some expression), $sloc) }
   | constructor = constructor_name; { Construct (((constructor , $loc(constructor)), None), $sloc) }
   | func = ident; args = function_args; { Apply ((Var (func, $loc(func)), args), $sloc) }
@@ -232,7 +231,7 @@ let one_expression :=
   | "("; ")"; { Tuple ([], $sloc) }
   | "("; fst = expression; ","; args = separated_nonempty_list(",", expression); ")"; { Tuple (fst :: args, $sloc) }
   | "match"; scrutinee = expression; "with"; option("|"); cases = separated_nonempty_list("|", match_case); { Match { scrutinee; cases; annotation = $sloc } }
-  | "fun"; "(" ; args = separated_list(",", ident); ")"; "->"; body = expression; { Ast.Expression.Lambda ((args, body), $sloc) }
+  | "fun"; "(" ; args = separated_list(",", located(ident)); ")"; "->"; body = expression; { Ast.Expression.Lambda ((args, body), $sloc) }
 
 let function_args ==
   | "("; args = separated_list(",", expression); ")"; { args }
