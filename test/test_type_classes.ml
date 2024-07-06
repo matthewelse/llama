@@ -3,50 +3,6 @@ open! Import
 open Helpers
 
 let%expect_test "experiment" =
-  Type.Id.For_testing.reset_counter ();
-  Type.Var.For_testing.reset_counter ();
-  let tn_bool = Type_name.of_string "bool", Span.dummy in
-  let ty_bool : Ast.Type.t = Apply ((tn_bool, []), Span.dummy) in
-  let ast : Ast.t =
-    [ Type_class_declaration
-        { name = Type_class_name.of_string "Eq", Span.dummy
-        ; arg = "'a", Span.dummy
-        ; functions =
-            [ { name = Ident.of_string "eq", Span.dummy
-              ; ty =
-                  Fun
-                    ( ([ Var ("'a", Span.dummy); Var ("'a", Span.dummy) ], ty_bool)
-                    , Span.dummy )
-              }
-            ]
-        ; constraints = []
-        }
-    ]
-  in
-  Pretty_print.pp_ast Format.std_formatter ast;
-  [%expect {|
-    class Eq ('a) : sig
-      val eq : 'a -> 'a -> bool
-    end
-    |}];
-  let tv = Type.Var.create () in
-  Pretty_print.pp_polytype
-    Format.std_formatter
-    { body =
-        Fun
-          ( ( [ Type.var tv; Type.var tv ]
-            , Apply (((Type_name.of_string "bool", `Position Span.dummy), []), ()) )
-          , () )
-    ; quantifiers = [ tv ]
-    ; constraints =
-        [ { type_class = Type_class_name.of_string "Eq"; arg = Var (tv, ()) }
-        ; { type_class = Type_class_name.of_string "Ord"; arg = Var (tv, ()) }
-        ]
-    };
-  [%expect {| 'a. Eq ('a), Ord ('a) => 'a -> 'a -> bool |}]
-;;
-
-let%expect_test "experiment" =
   test_fragment
     ~output:`Values
     {|

@@ -585,12 +585,6 @@ let%expect_test "don't allow different branches of a match statement to have dif
     | Nil -> (None, None)
     | Cons (x, y) -> (Some x, y)
   |};
-  (* FIXME: error should look like
-
-     {v
-| Cons (x, y) -> (Some x, y)
-                          ^ Types list and option are not equal.
-     v}*)
   [%expect
     {|
     ￫ error[E004]

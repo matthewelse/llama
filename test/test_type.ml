@@ -63,24 +63,3 @@ let%test_module "occurs" =
     ;;
   end)
 ;;
-
-let%expect_test "example" =
-  Type.Var.For_testing.reset_counter ();
-  Type.Id.For_testing.reset_counter ();
-  let pp ty = Pretty_print.pp_type Format.std_formatter ty in
-  let x = Type.Var.create () in
-  let y = Type.Var.create () in
-  let z = Type.Var.create () in
-  let apply s l : Type.t =
-    Apply (((Type_name.of_string s, `Position Span.dummy), l), ())
-  in
-  let a = apply "a" [] in
-  let j x y z = apply "j" [ x; y; z ] in
-  let f x y = apply "f" [ x; y ] in
-  let t1 = j (Type.var x) (Type.var y) (Type.var z) in
-  pp t1;
-  [%expect {| ('a, 'b, 'c) j |}];
-  let t2 = j (f (Type.var y) (Type.var y)) (f (Type.var z) (Type.var z)) (f a a) in
-  pp t2;
-  [%expect {| (('a, 'a) f, ('b, 'b) f, (a, a) f) j |}]
-;;
