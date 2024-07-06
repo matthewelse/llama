@@ -22,7 +22,7 @@ let type_ast ?env (ast : Ast.t) =
           name
           { body = Var (this_ty, ()); quantifiers = []; constraints = [] }
       in
-      let%tydi { constraints; typed_ast = _ }, ty = Constraints.infer value ~env in
+      let%tydi constraints, ty = Constraints.infer value ~env in
       (* Solve the constraints we've generated. *)
       let solver = Solver.create () in
       let%bind env = Solver.solve solver constraints ~env in

@@ -18,32 +18,23 @@ module Constraint : sig
   [@@deriving sexp_of]
 end
 
-module Annotations : sig
-  type t = ( :: ) of Annotation.t * Annotation.t list [@@deriving sexp_of]
+type 'ast t_generic =
+  { constraints : Annotation.t Nonempty_list.t Constraint.t list
+  ; typed_ast : 'ast
+  }
 
-  val primary_loc : t -> Span.t
-end
+type t = Typed_ast.Expression.t t_generic [@@deriving sexp_of]
 
-type t [@@deriving sexp_of]
+(* FIXME: The whole name of this module, and the name of this function don't really make sense --
+   really what we're doing is generating type constraints, and the typed ast at the same time. *)
 
-module Gen_out : sig
-  type constraints := t
-
-  type 'ast t =
-    { constraints : constraints
-    ; typed_ast : 'ast
-    }
-end
-
-val empty : t
-val merge : t -> t -> t
-val to_list : t -> Annotations.t Constraint.t list
-val infer : Expression.t -> env:Env.t -> Typed_ast.Expression.t Gen_out.t * Type.t
+val constraints : t -> Annotation.t Nonempty_list.t Constraint.t list
+val infer : Expression.t -> env:Env.t -> t * Type.t
 
 module For_testing : sig
   val check_pattern
     :  Pattern.t
     -> Type.t
     -> env:Env.t
-    -> Typed_ast.Pattern.t Gen_out.t * Env.t
+    -> Typed_ast.Pattern.t t_generic * Env.t
 end

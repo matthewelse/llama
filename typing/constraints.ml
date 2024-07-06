@@ -23,41 +23,27 @@ module Constraint = struct
   [@@deriving sexp_of]
 end
 
-module Annotations = struct
-  (* FIXME melse: factor out [Nonempty_list.t] *)
-  type t = ( :: ) of Annotation.t * Annotation.t list [@@deriving sexp_of]
+type 'ast t_generic =
+  { constraints : Annotation.t Nonempty_list.t Constraint.t list
+  ; typed_ast : 'ast
+  }
+[@@deriving sexp_of]
 
-  let primary_loc (hd :: _) = Annotation.loc hd
-end
+type t = Typed_ast.Expression.t t_generic [@@deriving sexp_of]
 
-type t = Annotations.t Constraint.t list [@@deriving sexp_of]
+let constraints { constraints; _ } = constraints
 
-let add (t : t) c = c :: t
-let singleton c : t = [ c ]
-let empty = []
-let merge t1 t2 = t1 @ t2
-let merge_list ts = List.fold ts ~init:empty ~f:merge
-let to_list t = t
-
-module Gen_out = struct
-  type 'ast t =
-    { constraints : Annotations.t Constraint.t list
-    ; typed_ast : 'ast
-    }
-
-  let unzip ts =
-    List.map ts ~f:(fun { constraints; typed_ast } -> constraints, typed_ast)
-    |> List.unzip
-  ;;
-end
+let unzip ts =
+  List.map ts ~f:(fun { constraints; typed_ast } -> constraints, typed_ast) |> List.unzip
+;;
 
 let rec check_pattern (pattern : Ast.Pattern.t) expected_ty ~env
-  : Typed_ast.Pattern.t Gen_out.t * Env.t
+  : Typed_ast.Pattern.t t_generic * Env.t
   =
   match pattern with
   | Var (name, _) ->
     let env = Env.with_var env name (Type.Poly.mono expected_ty) in
-    { constraints = empty; typed_ast = Var (name, ()) }, env
+    { constraints = []; typed_ast = Var (name, ()) }, env
   | Construct (((constructor_name, constructor_loc), arg), _) ->
     (* FIXME: share this code with [check_constructor] *)
     let type_name = Env.constructor_exn env constructor_name ~loc:constructor_loc in
@@ -88,11 +74,11 @@ let rec check_pattern (pattern : Ast.Pattern.t) expected_ty ~env
     (match arg_type, arg with
      | None, None ->
        ( { constraints =
-             singleton
-               (Same_type
-                  ( expected_ty
-                  , Apply (((type_name, `Position constructor_loc), type_args), ())
-                  , [ Pattern_should_have_type (pattern, expected_ty) ] ))
+             [ Same_type
+                 ( expected_ty
+                 , Apply (((type_name, `Position constructor_loc), type_args), ())
+                 , [ Pattern_should_have_type (pattern, expected_ty) ] )
+             ]
          ; typed_ast = Construct (((constructor_name, ()), None), ())
          }
        , env )
@@ -102,12 +88,11 @@ let rec check_pattern (pattern : Ast.Pattern.t) expected_ty ~env
          check_pattern arg_pattern arg_type ~env
        in
        ( { constraints =
-             add
-               constraints
-               (Same_type
-                  ( expected_ty
-                  , Apply (((type_name, `Position constructor_loc), type_args), ())
-                  , [ Pattern_should_have_type (pattern, expected_ty) ] ))
+             Same_type
+               ( expected_ty
+               , Apply (((type_name, `Position constructor_loc), type_args), ())
+               , [ Pattern_should_have_type (pattern, expected_ty) ] )
+             :: constraints
          ; typed_ast = Construct (((constructor_name, ()), Some typed_ast), ())
          }
        , env )
@@ -134,34 +119,32 @@ let rec check_pattern (pattern : Ast.Pattern.t) expected_ty ~env
     let (env, nested_constraints), typed_asts =
       List.fold_map
         type_vars
-        ~init:(env, empty)
+        ~init:(env, [])
         ~f:(fun (env, constraints) (pattern, type_var) ->
           let%tydi { constraints = constraints'; typed_ast }, env =
             check_pattern pattern (Var (type_var, ())) ~env
           in
-          (env, merge constraints constraints'), typed_ast)
+          (env, constraints @ constraints'), typed_ast)
     in
     ( { constraints =
-          add
-            nested_constraints
-            (Same_type
-               ( expected_ty
-               , Tuple
-                   ( List.map type_vars ~f:(fun (_, type_var) : Type.t ->
-                       Var (type_var, ()))
-                   , () )
-               , [ Pattern_should_have_type (pattern, expected_ty) ] ))
+          Same_type
+            ( expected_ty
+            , Tuple
+                ( List.map type_vars ~f:(fun (_, type_var) : Type.t -> Var (type_var, ()))
+                , () )
+            , [ Pattern_should_have_type (pattern, expected_ty) ] )
+          :: nested_constraints
       ; typed_ast = Tuple (typed_asts, ())
       }
     , env )
 ;;
 
-let rec infer (expr : Expression.t) ~env : Typed_ast.Expression.t Gen_out.t * Type.t =
+let rec infer (expr : Expression.t) ~env : t * Type.t =
   match expr with
   | Const (Int value, _) ->
-    { constraints = empty; typed_ast = Const (Int value, ()) }, Type.intrinsic Int
+    { constraints = []; typed_ast = Const (Int value, ()) }, Type.intrinsic Int
   | Const (String value, _) ->
-    { constraints = empty; typed_ast = Const (String value, ()) }, Type.intrinsic String
+    { constraints = []; typed_ast = Const (String value, ()) }, Type.intrinsic String
   | Var (v, loc) ->
     let poly_type = Env.value_exn env v ~loc in
     let type_, constraints = Type.Poly.init poly_type in
@@ -170,8 +153,8 @@ let rec infer (expr : Expression.t) ~env : Typed_ast.Expression.t Gen_out.t * Ty
         Constraint.Implements_type_class
           ( type_class
           , arg
-          , ([ Var_requires_type_class ({ value = v; loc }, type_class) ] : Annotations.t)
-          ))
+          , ([ Var_requires_type_class ({ value = v; loc }, type_class) ]
+             : Annotation.t Nonempty_list.t) ))
     in
     { constraints; typed_ast = Var (v, ()) }, type_
   | Lambda ((args, body), _) ->
@@ -211,7 +194,7 @@ let rec infer (expr : Expression.t) ~env : Typed_ast.Expression.t Gen_out.t * Ty
         let%tydi { constraints = arg_constraints; typed_ast = arg_ast }, arg_ty =
           infer arg_value ~env
         in
-        let fresh_type_equals_arg_ty : Annotations.t Constraint.t =
+        let fresh_type_equals_arg_ty : Annotation.t Nonempty_list.t Constraint.t =
           Same_type
             ( arg_ty
             , fresh_ty
@@ -225,7 +208,7 @@ let rec infer (expr : Expression.t) ~env : Typed_ast.Expression.t Gen_out.t * Ty
           List.fold
             ~init:fun_constraints
             arg_tys
-            ~f:(fun acc (_, _, arg_constraints, _) -> merge acc arg_constraints)
+            ~f:(fun acc (_, _, arg_constraints, _) -> acc @ arg_constraints)
       ; typed_ast = Apply ((fun_ast, List.map arg_tys ~f:(fun (c, _, _, _) -> c)), ())
       }
     , return_ty )
@@ -235,9 +218,9 @@ let rec infer (expr : Expression.t) ~env : Typed_ast.Expression.t Gen_out.t * Ty
   | Tuple (elems, _) ->
     let types = List.map elems ~f:(infer ~env) in
     let out, types = List.unzip types in
-    let out_constraints, out_asts = Gen_out.unzip out in
+    let out_constraints, out_asts = unzip out in
     let ty : Type.t = Tuple (types, ()) in
-    { constraints = merge_list out_constraints; typed_ast = Tuple (out_asts, ()) }, ty
+    { constraints = List.concat out_constraints; typed_ast = Tuple (out_asts, ()) }, ty
   | Construct ((constructor_name, arg), _) -> infer_constructor constructor_name arg ~env
   | Record (fields, loc) -> infer_record fields ~env ~loc
   | Match { scrutinee; cases; annotation = loc } ->
@@ -250,7 +233,7 @@ let rec infer (expr : Expression.t) ~env : Typed_ast.Expression.t Gen_out.t * Ty
     let%tydi (body_ty, body_constraints), typed_cases =
       List.fold_map
         cases
-        ~init:(None, empty)
+        ~init:(None, [])
         ~f:(fun (expected_body_type, infer_constraints) (pattern, body) ->
           let%tydi { constraints = pattern_constraints; typed_ast = pattern_ast }, env =
             check_pattern pattern scrutinee_ty ~env
@@ -263,7 +246,7 @@ let rec infer (expr : Expression.t) ~env : Typed_ast.Expression.t Gen_out.t * Ty
               out, expected_type
           in
           ( ( Some body_ty
-            , merge_list [ infer_constraints; pattern_constraints; body_constraints ] )
+            , List.concat [ infer_constraints; pattern_constraints; body_constraints ] )
           , (pattern_ast, body_ast) ))
     in
     let body_ty =
@@ -276,7 +259,7 @@ let rec infer (expr : Expression.t) ~env : Typed_ast.Expression.t Gen_out.t * Ty
           "Internal compiler error: body type undefined (empty match expression?)"
       | Some body_ty -> body_ty
     in
-    ( { constraints = merge scrutinee_constraints body_constraints
+    ( { constraints = scrutinee_constraints @ body_constraints
       ; typed_ast =
           Match { scrutinee = scrutinee_typed_ast; cases = typed_cases; annotation = () }
       }
@@ -392,7 +375,7 @@ and infer_record fields ~env ~loc =
       constraints, ((name, ()), typed_ast))
     |> List.unzip
   in
-  ( { constraints = merge_list constraints; typed_ast = Record (typed_fields, ()) }
+  ( { constraints = List.concat constraints; typed_ast = Record (typed_fields, ()) }
   , Type.Apply (((type_name, `Position loc), type_args), ()) )
 
 and infer_constructor (constructor_name, constructor_name_loc) arg ~env =
@@ -421,11 +404,11 @@ and infer_constructor (constructor_name, constructor_name_loc) arg ~env =
       (constructor_name, constructor_name_loc)
       ~equal:[%equal: Constructor.t * _]
   in
-  let out : Typed_ast.Expression.t Gen_out.t =
+  let out : t =
     match constructor, arg with
     | None, None ->
       (* No constraints *)
-      { constraints = empty; typed_ast = Construct (((constructor_name, ()), None), ()) }
+      { constraints = []; typed_ast = Construct (((constructor_name, ()), None), ()) }
     | Some constructor_typ, Some value ->
       let constructor_typ = Type.subst constructor_typ ~replacements:type_arg_mapping in
       let out = check value constructor_typ ~env in
@@ -455,36 +438,13 @@ and infer_constructor (constructor_name, constructor_name_loc) arg ~env =
   in
   out, Type.Apply (((type_name, type_decl_loc), type_args), ())
 
-and check (expr : Expression.t) (expected_ty : Type.t) ~env
-  : Typed_ast.Expression.t Gen_out.t
-  =
-  match expr, expected_ty with
-  | Lambda ((args, body), loc), Fun ((arg_types, result), _) ->
-    let env =
-      match
-        List.fold2 args arg_types ~init:env ~f:(fun env (arg_name, _) arg_type ->
-          Env.with_var env arg_name (Type.Poly.mono arg_type))
-      with
-      | Unequal_lengths ->
-        let expected_num_args = List.length arg_types in
-        let num_args = List.length args in
-        Reporter.fatalf
-          ~loc:(Asai.Range.of_lex_range loc)
-          Type_error
-          "Function call expected %d args, but %d were provided."
-          expected_num_args
-          num_args
-      | Ok env -> env
-    in
-    check body result ~env
-  | _, expected_ty ->
-    let%tydi { constraints; typed_ast }, ty = infer expr ~env in
-    { typed_ast
-    ; constraints =
-        add
-          constraints
-          (Same_type (ty, expected_ty, [ Expression_should_have_type (expr, expected_ty) ]))
-    }
+and check (expr : Expression.t) (expected_ty : Type.t) ~env : t =
+  let%tydi { constraints; typed_ast }, ty = infer expr ~env in
+  { typed_ast
+  ; constraints =
+      Same_type (ty, expected_ty, [ Expression_should_have_type (expr, expected_ty) ])
+      :: constraints
+  }
 ;;
 
 module For_testing = struct

@@ -3,7 +3,7 @@ open! Import
 
 let debug = false
 
-let error ~annotations:(primary :: _ : Constraints.Annotations.t) message =
+let error ~annotations:(primary :: _ : Constraints.Annotation.t Nonempty_list.t) message =
   let loc =
     match primary with
     | Expression_should_have_type (expr, _) -> Expression.loc expr
@@ -65,7 +65,7 @@ struct
     let%bind ty1 = normalize_ty t ty1 ~env in
     let%bind ty2 = normalize_ty t ty2 ~env in
     (* FIXME: which one is the one we care about? *)
-    let loc = Constraints.Annotations.primary_loc annotations in
+    let loc = Nonempty_list.hd annotations |> Constraints.Annotation.loc in
     match ty1, ty2 with
     | Fun ((args_left, result_left), _), Fun ((args_right, result_right), _) ->
       let%bind () =

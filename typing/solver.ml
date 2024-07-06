@@ -60,7 +60,7 @@ let sexp_of_t t =
 let solve t (constraints : Constraints.t) ~(env : Env.t) =
   let open Result.Let_syntax in
   let%bind () =
-    iter_result (Constraints.to_list constraints) ~f:(function
+    iter_result (Constraints.constraints constraints) ~f:(function
       | Same_type (t1, t2, annotations) -> Unify.unify_ty_ty t t1 t2 ~env ~annotations
       | Implements_type_class (type_class, arg, _annotations) ->
         Hashtbl.add_multi t.constraints ~key:type_class ~data:arg;
