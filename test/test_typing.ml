@@ -80,7 +80,7 @@ let%expect_test "option" =
 let%expect_test "list" =
   test_fragment
     {|
-    type 'a list = | Nil | Cons of 'a * 'a list
+    type 'a list = | Nil | Cons of ('a, 'a list)
 
     let x = Nil
     ;;
@@ -99,14 +99,14 @@ let%expect_test "list" =
           (quantifiers (3))
           (body (
             Apply (
-              ((list (Position (<example>:2:4 <example>:2:47))) ((Var (3 ()))))
+              ((list (Position (<example>:2:4 <example>:2:48))) ((Var (3 ()))))
               ())))
           (constraints ())))
         (y (
           (quantifiers ())
           (body (
             Apply (
-              ((list (Position (<example>:2:4 <example>:2:47)))
+              ((list (Position (<example>:2:4 <example>:2:48)))
                ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))
@@ -114,7 +114,7 @@ let%expect_test "list" =
           (quantifiers ())
           (body (
             Apply (
-              ((list (Position (<example>:2:4 <example>:2:47)))
+              ((list (Position (<example>:2:4 <example>:2:48)))
                ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))))
@@ -137,7 +137,7 @@ let%expect_test "list" =
                    ()))))))
             (id 0)))
           (args (1))
-          (loc (Position (<example>:2:4 <example>:2:47)))))
+          (loc (Position (<example>:2:4 <example>:2:48)))))
         (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
         (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors (
@@ -152,7 +152,7 @@ let%expect_test "list" =
 let%expect_test "list and options" =
   test_fragment
     {|
-    type 'a list = | Nil | Cons of 'a * 'a list
+    type 'a list = | Nil | Cons of ('a, 'a list)
     type 'a option = | None | Some of 'a
 
     let x = Cons (3, Nil)
@@ -179,7 +179,7 @@ let%expect_test "list and options" =
           (quantifiers ())
           (body (
             Apply (
-              ((list (Position (<example>:2:4 <example>:2:47)))
+              ((list (Position (<example>:2:4 <example>:2:48)))
                ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))))
@@ -202,7 +202,7 @@ let%expect_test "list and options" =
                    ()))))))
             (id 0)))
           (args (1))
-          (loc (Position (<example>:2:4 <example>:2:47)))))
+          (loc (Position (<example>:2:4 <example>:2:48)))))
         (option (
           (shape (
             Variant
@@ -315,7 +315,7 @@ let%expect_test "variables" =
 let%expect_test "let _ = _ in _" =
   test_fragment
     {|
-  intrinsic int_add : int -> int -> int = "%int_add"
+  intrinsic int_add : (int, int) -> int = "%int_add"
 
   let y =
     let z = 10 in
@@ -329,8 +329,8 @@ let%expect_test "let _ = _ in _" =
           (quantifiers ())
           (body (
             Fun (
-              (((Apply (((int (Position (<example>:2:22 <example>:2:25))) ()) ()))
-                (Apply (((int (Position (<example>:2:29 <example>:2:32))) ()) ())))
+              (((Apply (((int (Position (<example>:2:23 <example>:2:26))) ()) ()))
+                (Apply (((int (Position (<example>:2:28 <example>:2:31))) ()) ())))
                (Apply (((int (Position (<example>:2:36 <example>:2:39))) ()) ())))
               ())))
           (constraints ())))
@@ -353,7 +353,7 @@ let%expect_test "let _ = _ in _" =
 let%expect_test "lambdas" =
   test_fragment
     {|
-  intrinsic int_add : int -> int -> int = "%int_add"
+  intrinsic int_add : (int, int) -> int = "%int_add"
 
   let add_twice = fun(x,y) ->
     int_add (int_add (x, y), int_add (x, y))
@@ -372,8 +372,8 @@ let%expect_test "lambdas" =
           (quantifiers ())
           (body (
             Fun (
-              (((Apply (((int (Position (<example>:2:22 <example>:2:25))) ()) ()))
-                (Apply (((int (Position (<example>:2:29 <example>:2:32))) ()) ())))
+              (((Apply (((int (Position (<example>:2:23 <example>:2:26))) ()) ()))
+                (Apply (((int (Position (<example>:2:28 <example>:2:31))) ()) ())))
                (Apply (((int (Position (<example>:2:36 <example>:2:39))) ()) ())))
               ())))
           (constraints ())))
@@ -381,8 +381,8 @@ let%expect_test "lambdas" =
           (quantifiers ())
           (body (
             Fun (
-              (((Apply (((int (Position (<example>:2:22 <example>:2:25))) ()) ()))
-                (Apply (((int (Position (<example>:2:29 <example>:2:32))) ()) ())))
+              (((Apply (((int (Position (<example>:2:23 <example>:2:26))) ()) ()))
+                (Apply (((int (Position (<example>:2:28 <example>:2:31))) ()) ())))
                (Apply (((int (Position (<example>:2:36 <example>:2:39))) ()) ())))
               ())))
           (constraints ())))
@@ -406,7 +406,7 @@ let%expect_test "polymorphism" =
   test_fragment
     {|
       type 'a option = | None | Some of 'a
-      type 'a list = | Nil | Cons of 'a * 'a list
+      type 'a list = | Nil | Cons of ('a, 'a list)
 
       let hd = fun (l) ->
         match l with
@@ -477,7 +477,7 @@ let%expect_test "polymorphism" =
           (quantifiers ())
           (body (
             Apply (
-              ((list (Position (<example>:3:6 <example>:3:49)))
+              ((list (Position (<example>:3:6 <example>:3:50)))
                ((Apply (((int Built_in) ()) ()))))
               ())))
           (constraints ())))))
@@ -500,7 +500,7 @@ let%expect_test "polymorphism" =
                    ()))))))
             (id 1)))
           (args (2))
-          (loc (Position (<example>:3:6 <example>:3:49)))))
+          (loc (Position (<example>:3:6 <example>:3:50)))))
         (option (
           (shape (
             Variant
@@ -528,8 +528,8 @@ let%expect_test "value restriction" =
     {|
   type 'a option = | None | Some of 'a
 
-  intrinsic ref_make : 'a -> 'a ref = "%ref_make"
-  intrinsic ref_set : 'a ref -> 'a -> unit = "%ref_set"
+  intrinsic ref_make : ('a) -> 'a ref = "%ref_make"
+  intrinsic ref_set : ('a ref, 'a) -> unit = "%ref_set"
 
   let x = ref_make (None)
 
@@ -551,8 +551,8 @@ let%expect_test "don't allow a ref to be set to two different types" =
     {|
   type 'a option = | None | Some of 'a
 
-  intrinsic ref_make : 'a -> 'a ref = "%ref_make"
-  intrinsic ref_set : 'a ref -> 'a -> unit = "%ref_set"
+  intrinsic ref_make : ('a) -> 'a ref = "%ref_make"
+  intrinsic ref_set : ('a ref, 'a) -> unit = "%ref_set"
 
   let x = fun () ->
     let y = ref_make (None) in
@@ -566,9 +566,9 @@ let%expect_test "don't allow a ref to be set to two different types" =
     ￫ error[E004]
     ￭ <example>
     9 |     let a = ref_set (y, Some 10) in
-      ^ ref_set is expected to have type int ref -> int -> unit.
+      ^ ref_set is expected to have type (int ref, int) -> unit.
       ^ Types 'a option and int are not equal.
-      ^ Some 10 is expected to have type int.
+      ^ Some (10) is expected to have type int.
     |}]
 ;;
 
@@ -578,7 +578,7 @@ let%expect_test "don't allow different branches of a match statement to have dif
   test_fragment
     {|
   type 'a option = | None | Some of 'a
-  type 'a list   = | Nil  | Cons of 'a * 'a list
+  type 'a list   = | Nil  | Cons of ('a, 'a list)
 
   let hd_tl = fun (l) ->
     match l with
@@ -597,16 +597,16 @@ let%expect_test "don't allow different branches of a match statement to have dif
     ￭ <example>
     8 |     | Cons (x, y) -> (Some x, y)
       ^ Types 'a list and 'a option are not equal.
-      ^ (Some x, y) is expected to have type ('b option * 'a option).
+      ^ (Some (x), y) is expected to have type ('b option, 'a option).
     |}]
 ;;
 
 let%expect_test "recursive functions" =
   test_fragment
     {|
-  type 'a list = | Nil | Cons of 'a * 'a list
+  type 'a list = | Nil | Cons of ('a, 'a list)
 
-  intrinsic int_add : int -> int -> int = "%int_add"
+  intrinsic int_add : (int, int) -> int = "%int_add"
 
   let len = fun (x) ->
     match x with
@@ -621,8 +621,8 @@ let%expect_test "recursive functions" =
           (quantifiers ())
           (body (
             Fun (
-              (((Apply (((int (Position (<example>:4:22 <example>:4:25))) ()) ()))
-                (Apply (((int (Position (<example>:4:29 <example>:4:32))) ()) ())))
+              (((Apply (((int (Position (<example>:4:23 <example>:4:26))) ()) ()))
+                (Apply (((int (Position (<example>:4:28 <example>:4:31))) ()) ())))
                (Apply (((int (Position (<example>:4:36 <example>:4:39))) ()) ())))
               ())))
           (constraints ())))
@@ -657,7 +657,7 @@ let%expect_test "recursive functions" =
                    ()))))))
             (id 0)))
           (args (1))
-          (loc (Position (<example>:2:2 <example>:2:45)))))
+          (loc (Position (<example>:2:2 <example>:2:46)))))
         (ref ((shape (Intrinsic Ref)) (args (0)) (loc Built_in)))
         (string ((shape (Intrinsic String)) (args ()) (loc Built_in)))))
       (constructors (

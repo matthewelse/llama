@@ -183,17 +183,19 @@ let rec pp_type' formatter ty ~tvs =
     Format.pp_print_string formatter ") ";
     Format.pp_print_string formatter (Type_name.to_string n)
   | Fun ((args, r), _) ->
+    Format.pp_print_string formatter "(";
     Format.pp_print_list
-      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " -> ")
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
       (pp_type' ~tvs)
       formatter
       args;
+    Format.pp_print_string formatter ")";
     Format.pp_print_string formatter " -> ";
     pp_type' formatter r ~tvs
   | Tuple (ts, _) ->
     Format.pp_print_char formatter '(';
     Format.pp_print_list
-      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter " * ")
+      ~pp_sep:(fun formatter () -> Format.pp_print_string formatter ", ")
       (pp_type' ~tvs)
       formatter
       ts;

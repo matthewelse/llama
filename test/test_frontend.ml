@@ -3,7 +3,7 @@ open! Import
 
 let example0 =
   {|
-  intrinsic int_add : int -> int -> int = "%int_add"
+  intrinsic int_add : (int, int) -> int = "%int_add"
 
   let a = 10
   let c = int_add(1,2)
@@ -28,7 +28,7 @@ let example0 =
   let y = Some (Some (Some None))
   let z = { d = 10 }
 
-  type 'a list = | Nil | Cons of 'a * 'a list
+  type 'a list = | Nil | Cons of ('a, 'a list)
 
   let l = Cons(3, Nil)
 

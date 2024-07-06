@@ -52,14 +52,14 @@ let%expect_test "experiment" =
     {|
   type 'a option = | None | Some of 'a
 
-  intrinsic bool_equal : bool -> bool -> bool = "%int_equal"
-  intrinsic bool_and : bool -> bool -> bool = "%int_land"
-  intrinsic int_add : int -> int -> int = "%int_add"
-  intrinsic int_equal : int -> int -> bool = "%int_equal"
+  intrinsic bool_equal : (bool, bool) -> bool = "%int_equal"
+  intrinsic bool_and : (bool, bool) -> bool = "%int_land"
+  intrinsic int_add : (int, int) -> int = "%int_add"
+  intrinsic int_equal : (int, int) -> bool = "%int_equal"
   intrinsic neg : int -> int = "%int_neg"
 
   class Eq ('a) : sig
-    val eq : 'a -> 'a -> bool
+    val eq : ('a, 'a) -> bool
   end
 
   impl Eq (bool) = struct
@@ -78,7 +78,7 @@ let%expect_test "experiment" =
   end
 
   class Ord ('a) where Eq ('a) : sig
-    val compare : 'a -> 'a -> int
+    val compare : ('a, 'a) -> int
   end
 
   impl Ord ('a option) where Ord ('a) = struct

@@ -16,6 +16,8 @@ module Ast =
         type record = Span.t [@@deriving sexp_of]
         type record_field = Span.t [@@deriving sexp_of]
         type tuple = Span.t [@@deriving sexp_of]
+        type tapply = Nothing.t [@@deriving sexp_of]
+        type tfun = Nothing.t [@@deriving sexp_of]
         type var = Span.t [@@deriving sexp_of]
       end
 
@@ -71,6 +73,21 @@ end
 
 module Expression = struct
   include Ast.Expression
+
+  let rec is_syntactic_value t =
+    (* see: http://mlton.org/ValueRestriction *)
+    match t with
+    | Var _ -> true
+    | Const _ -> true
+    | Lambda _ -> true
+    | Tuple (ts, _) -> List.for_all ts ~f:is_syntactic_value
+    | Record (fields, _) -> List.for_all fields ~f:(fun (_, t) -> is_syntactic_value t)
+    | Construct _ -> true
+    | Match _ -> false
+    | Let _ -> false
+    | Apply _ -> false
+    | TFun _ | TApply _ -> .
+  ;;
 
   let loc t =
     match t with
@@ -129,8 +146,9 @@ module Expression = struct
       (match arg with
        | None -> ()
        | Some arg ->
-         Format.pp_print_string formatter " ";
-         pp formatter arg)
+         Format.pp_print_string formatter " (";
+         pp formatter arg;
+         Format.pp_print_string formatter ")")
     | Record (fields, _) ->
       Format.pp_print_char formatter '{';
       Format.pp_print_list
@@ -156,6 +174,7 @@ module Expression = struct
         formatter
         cases;
       Format.pp_close_box formatter ()
+    | TFun _ | TApply _ -> .
   ;;
 end
 

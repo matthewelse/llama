@@ -76,9 +76,10 @@ module Expression = Ast.Expression
 
 %%
 
-let program := ~ = list(structure_item); Eof; <>
+let located(A) == | value = A; { (value, $sloc) }
 
-(* Declarations *)
+let program :=
+  | ~ = list(structure_item); Eof; <>
 
 let structure_item :=
   | ~ = intrinsic_declaration;     <Intrinsic>
@@ -90,47 +91,42 @@ let structure_item :=
 (* Global variable declarations *)
 
 let let_binding ==
-  | "let" ; name = located(ident); "="; value = expression; option(";;"); { { Ast.Let_binding.name; value; loc = $sloc } }
+  | "let" ; name = located(ident); "="; value = expression; option(";;"); {
+    ({ name; value; loc = $sloc } : Ast.Let_binding.t)
+  }
 
 (* Type declarations *)
 
-let type_vars ==
-  | type_var = located(Type_var); { [ type_var ] }
-  | "(" ; type_vars = separated_nonempty_list(",", located(Type_var)); ")" ; { type_vars }
-
-let located(A) == | value = A; { (value, $sloc) }
-
 let type_declaration ==
-  | "type"; name = located(type_id); "="; desc = type_desc;
-    { { Ast.Type_declaration.name
-      ; type_params = []
-      ; type_shape = desc
-      ; loc = $sloc
-      }
-    }
-  | "type"; type_params = type_vars; name = located(type_id); "="; desc = type_desc;
-    {
-      { Ast.Type_declaration.name
-      ; type_params
-      ; type_shape = desc
-      ; loc = $sloc
-      }
+  | "type"; type_params = option(type_vars); name = located(type_id); "="; ~ = type_shape;
+    { ({ name
+       ; type_params = Option.value type_params ~default:[]
+       ; type_shape
+       ; loc = $sloc
+       } : Ast.Type_declaration.t)
     }
 
-let type_desc :=
-  | "{"; fields = record_fields; "}"; { Record { fields } }
-  | constructors = variant;           { Ast.Type_shape.Variant { constructors } }
+let type_vars ==
+  |       type_var  =                              located("type_var");       { [ type_var ] }
+  | "(" ; type_vars = separated_nonempty_list(",", located("type_var")); ")"; { type_vars }
 
-let variant :=
-  | option("|"); constructors = separated_list("|", constructor); { constructors }
+(* A type shape defines the "shape" of a new variant type or record type. *)
 
-let constructor :=
+let type_shape :=
+  | fields = record_declaration;             { (Record  { fields }       : Ast.Type_shape.t) }
+  | constructors = constructor_declarations; { (Variant { constructors } : Ast.Type_shape.t) }
+
+let constructor_declarations :=
+  | option("|"); constructors = separated_list("|", constructor_declaration); { constructors }
+
+let constructor_declaration :=
   | constructor_name = located(constructor_name); "of"; ~ = type_; { (constructor_name, Some type_) }
   | constructor_name = located(constructor_name); { (constructor_name, None) }
 
-let record_fields == separated_nonempty_list(";", record_field)
+let record_declaration ==
+  | "{"; fields = separated_nonempty_list(";", record_field_declaration); "}"; { fields }
 
-let record_field :=
+let record_field_declaration :=
   | field_name = located(field_id); ":"; ~ = type_; { (field_name, type_) }
 
 (* Intrinsic declaration *)
@@ -145,27 +141,25 @@ let intrinsic_declaration :=
     }
   }
 
-let base_type :=
-  | v = Type_var;    { Var (v, $sloc) }
-  | type_id = located(type_id);     { Apply ((type_id, []), $sloc) }
-  | type_var = Type_var; type_id = located(type_id);     { Apply ((type_id, [ Var (type_var, $loc(type_var)) ]), $sloc) }
-  | "("; ~ = type_; ")"; <>
+(* Types - used for annotating expressions, for fields of records, intrinsics etc. *)
 
-let inter_type :=
-  | ~ = base_type; "*"; ~ = inter_type; {
-    match (inter_type : Ast.Type.t) with
-    | Tuple (elems, _) -> Tuple (base_type :: elems, $sloc)
-    | _ -> Tuple ([ base_type; inter_type ], $sloc)
-  }
-  | ~ = base_type; { base_type }
+let base_type :=
+  | v = "type_var";             { (Var (v, $sloc) : Ast.Type.t) }
+  | type_id = located(type_id); { (Apply ((type_id, []), $sloc) : Ast.Type.t) }
+  | "("; ~ = type_; ")";        { type_ }
 
 let type_ :=
-  | ~ = inter_type; "->"; ~ = type_; {
-    match (type_ : Ast.Type.t) with
-    | Fun ((args, ret), _) -> Fun ((inter_type :: args, ret), $sloc)
-    | _ -> Fun(([ inter_type ], type_), $sloc)
-  }
-  | ~ = inter_type; { inter_type }
+  | "("; elems = separated_nonempty_list(",", type_); ")";                             { (Tuple (elems, $sloc) : Ast.Type.t) }
+
+  | "("; ")" ; "->"; return_type = type_;                                              { (Fun (([]   , return_type), $sloc) : Ast.Type.t) }
+  |      arg = base_type;  "->"; return_type = type_;                                  { (Fun (([arg], return_type), $sloc) : Ast.Type.t) }
+  | "("; arg = type_; ")"; "->"; return_type = type_;                                  { (Fun (([arg], return_type), $sloc) : Ast.Type.t) }
+  | "(";  args = separated_nonempty_list(",", type_); ")"; "->"; return_type = type_;  { (Fun (( args, return_type), $sloc) : Ast.Type.t) }
+
+  | "(";  args = separated_nonempty_list(",", type_); ")"; type_id = located(type_id); { (Apply ((type_id, args), $sloc) : Ast.Type.t) }
+  | ~ = base_type; type_id = located(type_id);                                         { (Apply ((type_id, [ base_type ]), $sloc) : Ast.Type.t) }
+
+  | ~ = base_type;                                                                     { base_type }
 
 (* Type classes *)
 
