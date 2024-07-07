@@ -24,7 +24,7 @@ let parse_with_error_reporting code ~pp_ast =
 
 let test_fragment ?(pp_ast = false) ?(output = `Env) code =
   let source : Asai.Range.string_source = { title = None; content = code } in
-  Type.Var.For_testing.reset_counter ();
+  Type_var.For_testing.reset_counter ();
   Type.Id.For_testing.reset_counter ();
   Llama_common.Reporter.run
     ~emit:(Terminal.display ~use_color:false ~override_source:(`String source))

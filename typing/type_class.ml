@@ -2,7 +2,7 @@ open! Core
 open! Import
 
 type t =
-  { type_var : Type.Var.t
+  { type_var : Type_var.t
   ; members : Type.t Ident.Map.t
   }
 [@@deriving sexp_of]

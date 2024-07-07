@@ -11,4 +11,5 @@ end
 include struct
   open Llama_typing
   module Type = Type
+  module Type_var = Type_var
 end

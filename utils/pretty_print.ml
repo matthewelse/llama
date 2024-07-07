@@ -58,14 +58,14 @@ let map_type_vars vars =
      So, collect together all of the type variables in the type, arrange them in alphabetical order,
      and assign an integer to each one. [pp_tv] is responsible for pretty-printing that int as a
      string. *)
-  Set.to_list vars |> List.mapi ~f:(fun i tv -> tv, i) |> Type.Var.Map.of_alist_exn
+  Set.to_list vars |> List.mapi ~f:(fun i tv -> tv, i) |> Type_var.Map.of_alist_exn
 ;;
 
 let pp_polytype formatter (ty : Type.Poly.t) =
   let%tydi { quantifiers; body; constraints } = ty in
   (* Union the free type variables of [ty] with [quantifiers] in case we don't use any of the
      quantifiers. *)
-  let quantifiers = Type.Var.Set.of_list quantifiers in
+  let quantifiers = Type_var.Set.of_list quantifiers in
   let tvs = map_type_vars (Set.union (Type.free_type_vars body) quantifiers) in
   (* Don't show quantifiers if there aren't any. *)
   if not (Set.is_empty quantifiers)

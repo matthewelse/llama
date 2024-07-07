@@ -1,11 +1,18 @@
 open! Core
 open! Import
 
+module Constraint = struct
+  type t =
+    | Same_type of Type.t * Type.t * Annotation.t Nonempty_list.t
+    | Implements_type_class of Type_class_name.t * Type.t * Annotation.t Nonempty_list.t
+  [@@deriving sexp_of]
+end
+
 let debug = false
 
 module T = struct
   type t =
-    { vars : Type.t Union_find.t Type.Var.Table.t
+    { vars : Type.t Union_find.t Type_var.Table.t
     ; constraints : Type.t list Type_class_name.Table.t
     }
 
@@ -23,7 +30,7 @@ module T = struct
 
   let unify_var_ty t v ty =
     let repr = lookup_var t v in
-    if debug then print_s [%message (v : Type.Var.t) ~equals:(ty : Type.t)];
+    if debug then print_s [%message (v : Type_var.t) ~equals:(ty : Type.t)];
     Union_find.set repr ty
   ;;
 
@@ -36,7 +43,7 @@ module Unify = Unification.Make (T)
 let normalize_ty = Unify.normalize_ty
 
 let create () =
-  { vars = Type.Var.Table.create (); constraints = Type_class_name.Table.create () }
+  { vars = Type_var.Table.create (); constraints = Type_class_name.Table.create () }
 ;;
 
 let rec iter_result xs ~f =
@@ -54,13 +61,13 @@ let sexp_of_t t =
       let ty = Union_find.get ty in
       var, ty)
   in
-  [%sexp { vars : (Type.Var.t * Type.t) list }]
+  [%sexp { vars : (Type_var.t * Type.t) list }]
 ;;
 
-let solve t (constraints : Constraints.t) ~(env : Env.t) =
+let solve t (constraints : Constraint.t list) ~(env : Env.t) =
   let open Result.Let_syntax in
   let%bind () =
-    iter_result (Constraints.constraints constraints) ~f:(function
+    iter_result constraints ~f:(function
       | Same_type (t1, t2, annotations) -> Unify.unify_ty_ty t t1 t2 ~env ~annotations
       | Implements_type_class (type_class, arg, _annotations) ->
         Hashtbl.add_multi t.constraints ~key:type_class ~data:arg;

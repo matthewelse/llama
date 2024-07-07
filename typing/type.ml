@@ -1,23 +1,8 @@
 open! Core
 open! Import
-module Var = Unique_id.Int ()
 module Id = Unique_id.Int ()
-
-module A = struct
-  type apply = unit [@@deriving sexp_of]
-  type fun_ = unit [@@deriving sexp_of]
-  type tuple = unit [@@deriving sexp_of]
-
-  type type_constructor =
-    [ `Built_in
-    | `Position of Span.t
-    ]
-  [@@deriving sexp_of]
-
-  type var = unit [@@deriving sexp_of]
-end
-
-include Base_ast.Type.Make (Var) (A)
+module Var = Type_var
+include Typed_ast.Type
 
 let var x = Var (x, ())
 

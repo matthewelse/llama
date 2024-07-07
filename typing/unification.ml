@@ -3,7 +3,7 @@ open! Import
 
 let debug = false
 
-let error ~annotations:(primary :: _ : Constraints.Annotation.t Nonempty_list.t) message =
+let error ~annotations:(primary :: _ : Annotation.t Nonempty_list.t) message =
   let loc =
     match primary with
     | Expression_should_have_type (expr, _) -> Expression.loc expr
@@ -16,9 +16,9 @@ let error ~annotations:(primary :: _ : Constraints.Annotation.t Nonempty_list.t)
 module Make (Lookup : sig
     type t
 
-    val unify_var_var : t -> Type.Var.t -> Type.Var.t -> unit
-    val unify_var_ty : t -> Type.Var.t -> Type.t -> unit
-    val var : t -> Type.Var.t -> Type.t
+    val unify_var_var : t -> Type_var.t -> Type_var.t -> unit
+    val unify_var_ty : t -> Type_var.t -> Type.t -> unit
+    val var : t -> Type_var.t -> Type.t
   end) =
 struct
   let rec iter_result xs ~f =
@@ -45,7 +45,7 @@ struct
       (match Lookup.var t v with
        | Var _ as ty -> Ok ty
        | ty ->
-         if debug then print_s [%message "normalising" (v : Type.Var.t) (ty : Type.t)];
+         if debug then print_s [%message "normalising" (v : Type_var.t) (ty : Type.t)];
          normalize_ty t ty ~env)
     | Apply ((name, args), annot) ->
       let%bind args = List.map args ~f:(normalize_ty t ~env) |> Result.all in
@@ -65,7 +65,7 @@ struct
     let%bind ty1 = normalize_ty t ty1 ~env in
     let%bind ty2 = normalize_ty t ty2 ~env in
     (* FIXME: which one is the one we care about? *)
-    let loc = Nonempty_list.hd annotations |> Constraints.Annotation.loc in
+    let loc = Nonempty_list.hd annotations |> Annotation.loc in
     match ty1, ty2 with
     | Fun ((args_left, result_left), _), Fun ((args_right, result_right), _) ->
       let%bind () =
@@ -147,7 +147,7 @@ struct
       then
         Type_error.error_string
           ~loc
-          [%string "Type variable %{v#Type.Var} occurs in another type."]
+          [%string "Type variable %{v#Type_var} occurs in another type."]
       else (
         Lookup.unify_var_ty t v ty;
         Ok ())

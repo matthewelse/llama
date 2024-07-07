@@ -439,17 +439,17 @@ let%expect_test "polymorphism" =
               ())))
           (constraints ())))
         (hd (
-          (quantifiers (5))
+          (quantifiers (7))
           (body (
             Fun (
               (((
                  Apply (
                    ((list (Position (<example>:7:10 <example>:7:13)))
-                    ((Var (5 ()))))
+                    ((Var (7 ()))))
                    ())))
                (Apply (
                  ((option (Position (<example>:2:6 <example>:2:42)))
-                  ((Var (5 ()))))
+                  ((Var (7 ()))))
                  ())))
               ())))
           (constraints ())))
@@ -541,8 +541,9 @@ let%expect_test "value restriction" =
     ￫ error[E004]
     ￭ <example>
     10 |   let z = ref_set (x, (Some None))
+       ^ ref_set is expected to have type (int option ref, int option) -> unit.
        ^ Types 'a option and int are not equal.
-       ^ None is expected to have type int.
+       ^ Some (None) is expected to have type int option.
     |}]
 ;;
 
@@ -567,7 +568,7 @@ let%expect_test "don't allow a ref to be set to two different types" =
     ￭ <example>
     9 |     let a = ref_set (y, Some 10) in
       ^ ref_set is expected to have type (int ref, int) -> unit.
-      ^ Types 'a option and int are not equal.
+      ^ Types int option and int are not equal.
       ^ Some (10) is expected to have type int.
     |}]
 ;;
@@ -621,13 +622,13 @@ let%expect_test "recursive functions" =
               ())))
           (constraints ())))
         (len (
-          (quantifiers (4))
+          (quantifiers (5))
           (body (
             Fun (
               (((
                  Apply (
                    ((list (Position (<example>:8:6 <example>:8:9)))
-                    ((Var (4 ()))))
+                    ((Var (5 ()))))
                    ())))
                (Apply (((int Built_in) ()) ())))
               ())))

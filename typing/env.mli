@@ -33,6 +33,6 @@ val with_fields : t -> ((Field_name.t * Span.t) * _) list -> type_name:Type_name
 val with_type_class : t -> Type_class_name.t -> Type_class.t -> t
 val with_type_declaration : t -> Type_name.t -> Type.Constructor.t -> loc:Span.t -> t
 val with_var : t -> Ident.t -> Type.Poly.t -> t
-val with_vars : t -> (Ident.t * Type.Var.t) list -> t
+val with_vars : t -> (Ident.t * Type_var.t) list -> t
 val remove_var : t -> Ident.t -> t
 val with_type_class_impl : t -> Type_class.Impl.t -> t

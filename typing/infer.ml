@@ -16,13 +16,13 @@ let type_ast ?env (ast : Ast.t) =
       (* Assume that [name] is recursive. Create a fresh type variable to represent the type of
          this value. *)
       let env =
-        let this_ty = Type.Var.create () in
+        let this_ty = Type_var.create () in
         Env.with_var
           env
           name
           { body = Var (this_ty, ()); quantifiers = []; constraints = [] }
       in
-      let%tydi constraints, ty = Constraints.infer value ~env in
+      let%tydi constraints, _typed_ast, ty = Constraints.infer value ~env in
       (* Solve the constraints we've generated. *)
       let solver = Solver.create () in
       let%bind env = Solver.solve solver constraints ~env in
@@ -61,7 +61,7 @@ let type_ast ?env (ast : Ast.t) =
         List.fold functions ~init:env ~f:(fun env { name; ty } ->
           let type_params =
             List.map (Ast.Type.free_type_vars ty) ~f:(fun name ->
-              name, Type.Var.create ())
+              name, Type_var.create ())
           in
           let var_mapping =
             String.Map.of_alist_reduce type_params ~f:(fun _ most_recent -> most_recent)
@@ -88,7 +88,7 @@ let type_ast ?env (ast : Ast.t) =
         List.all_equal args ~equal:[%equal: string * _] |> Option.map ~f:fst
       in
       let type_arg = ref type_arg in
-      let type_var = Type.Var.create () in
+      let type_var = Type_var.create () in
       let constraints =
         List.map constraints ~f:(fun { type_class = type_class, _; arg = arg, _ } ->
           (match !type_arg with
@@ -109,7 +109,7 @@ let type_ast ?env (ast : Ast.t) =
       Ok (Env.with_type_class_impl env tc)
     | Type_declaration { name = type_name, _; type_params; type_shape; loc } ->
       let type_params =
-        List.map type_params ~f:(fun (name, _) -> name, Type.Var.create ())
+        List.map type_params ~f:(fun (name, _) -> name, Type_var.create ())
       in
       let type_var_mapping =
         String.Map.of_alist_reduce type_params ~f:(fun _ most_recent -> most_recent)

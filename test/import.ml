@@ -22,6 +22,7 @@ include struct
   module Constraints = Constraints
   module Type = Type
   module Type_error = Type_error
+  module Type_var = Type_var
 end
 
 include struct

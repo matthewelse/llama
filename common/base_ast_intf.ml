@@ -14,7 +14,7 @@ module Type_annotation = struct
   end
 end
 
-module Annotation = struct
+module Expression_annotation = struct
   module type S = sig
     module Expression : sig
       type apply [@@deriving sexp_of]
@@ -40,7 +40,12 @@ module Annotation = struct
       type var [@@deriving sexp_of]
       type tuple [@@deriving sexp_of]
     end
+  end
+end
 
+module Annotation = struct
+  module type S = sig
+    include Expression_annotation.S
     module Type : Type_annotation.S
   end
 end
@@ -93,16 +98,12 @@ module Type = struct
   end
 end
 
-module type Base_ast = sig
-  module Type : sig
-    module type S = Type.S
+module Expression = struct
+  module type S = sig
+    module A : Expression_annotation.S
 
-    module Make (Type_var : Type_var.S) (A : Type_annotation.S) :
-      S with module Type_var := Type_var and module A := A
-  end
-
-  module Make (Type_var : Type_var.S) (A : Annotation.S) : sig
-    module Type : Type.S with module Type_var := Type_var and module A := A.Type
+    type type_var
+    type type_
 
     module Const : sig
       type t =
@@ -153,12 +154,46 @@ module type Base_ast = sig
             ; cases : (Pattern.t * t) list
             ; annotation : A.Expression.match_
             }
-        | TFun of (Type_var.t list * t, A.Expression.tfun) Annotated.t
-        | TApply of (t * Type.t, A.Expression.tapply) Annotated.t
+        | TFun of (type_var list * t, A.Expression.tfun) Annotated.t
+        | TApply of (t * type_, A.Expression.tapply) Annotated.t
       [@@deriving sexp_of]
 
       val const_int : int -> annot:A.Expression.const -> t
       val const_string : string -> annot:A.Expression.const -> t
     end
+  end
+end
+
+module type Base_ast = sig
+  module Type : sig
+    module type S = Type.S
+
+    module Make (Type_var : Type_var.S) (A : Type_annotation.S) :
+      S with module Type_var := Type_var and module A := A
+  end
+
+  module Expression : sig
+    module type S = Expression.S
+
+    module Make
+        (Type : sig
+           type var [@@deriving sexp_of]
+           type t [@@deriving sexp_of]
+         end)
+        (A : Expression_annotation.S) :
+      Expression.S
+      with type type_var := Type.var
+       and type type_ := Type.t
+       and module A := A
+  end
+
+  module Make (Type_var : Type_var.S) (A : Annotation.S) : sig
+    module Type : Type.S with module Type_var := Type_var and module A := A.Type
+
+    include
+      Expression.S
+      with type type_var := Type_var.t
+       and type type_ := Type.t
+       and module A := A
   end
 end
